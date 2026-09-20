@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unreach — find the code your agents keep rewriting around</title>
+  <title>Deadpath — find the code your agents keep rewriting around</title>
   <meta name="description" content="Deterministic dead-code detection for 16 languages and 45 frameworks, with confidence scores, guided agent workflows, budgeted LLM triage, and long-term memory. Works in Claude Code, Cursor, and Codex.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -12,7 +12,7 @@
     <div class="container">
       <a class="brand" href="index.html">
         <svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
-        Unreach
+        Deadpath
       </a>
       <nav class="primary">
         <a href="install.html">Install</a>
@@ -24,7 +24,7 @@
         <a href="memory.html">Memory</a>
         <a href="plugins.html">Plugins</a>
         <a href="research.html">Research</a>
-        <a class="gh" href="https://github.com/wolfxops/unreach">GitHub</a>
+        <a class="gh" href="https://github.com/wolfxops/deadpath">GitHub</a>
       </nav>
     </div>
   </header>
@@ -35,7 +35,7 @@
         <div>
           <span class="eyebrow reveal">Dead-code intelligence for coding agents</span>
           <h1 class="reveal d1">Find the code your agents <span>keep rewriting around.</span></h1>
-          <p class="lead reveal d2">Unreach builds a deterministic reachability graph of your repository, scores every finding with explainable confidence, and hands Claude Code, Cursor, or Codex a guided workflow — so the model spends tokens on judgement, not on rediscovering your codebase.</p>
+          <p class="lead reveal d2">Deadpath builds a deterministic reachability graph of your repository, scores every finding with explainable confidence, and hands Claude Code, Cursor, or Codex a guided workflow — so the model spends tokens on judgement, not on rediscovering your codebase.</p>
           <div class="btn-row reveal d3">
             <a class="btn primary" href="install.html">Get started</a>
             <a class="btn ghost" href="plugins.html">Add to your agent</a>
@@ -53,7 +53,7 @@
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
               <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity=".12"/></filter>
             </defs>
-            <text x="20" y="26" font-size="12" fill="#64748b" font-family="ui-monospace, Menlo, monospace">unreach scan ./svc</text>
+            <text x="20" y="26" font-size="12" fill="#64748b" font-family="ui-monospace, Menlo, monospace">deadpath scan ./svc</text>
 
             <!-- edges -->
             <path class="draw d1" d="M112,170 C170,170 190,96 232,92" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
@@ -116,7 +116,7 @@
       <div class="container stats">
         <div class="stat reveal"><b>16</b><span>languages with reachability graphs</span></div>
         <div class="stat reveal d1"><b>45</b><span>frameworks recognised from imports and manifests</span></div>
-        <div class="stat reveal d2"><b>0</b><span>files deleted by Unreach, ever</span></div>
+        <div class="stat reveal d2"><b>0</b><span>files deleted by Deadpath, ever</span></div>
         <div class="stat reveal d3"><b>−58%</b><span>tokens on a repeat visit (fixture, measured)</span></div>
       </div>
     </section>
@@ -182,7 +182,7 @@
           <div class="node reveal d4">
             <div class="bubble">5</div>
             <h3>Memory</h3>
-            <p>Parsed facts, finding history, decisions and verdicts persist in <code>.unreach/</code>. Next session starts warm.</p>
+            <p>Parsed facts, finding history, decisions and verdicts persist in <code>.deadpath/</code>. Next session starts warm.</p>
             <span class="tag ok">fewer tokens</span>
           </div>
         </div>
@@ -235,7 +235,7 @@
         </div>
         <div class="art reveal d1" aria-label="Prosecution versus devil's advocate producing a keep verdict">
           <svg viewBox="0 0 520 280" role="img">
-            <text x="20" y="24" font-size="12" fill="#64748b" font-family="ui-monospace, Menlo, monospace">unreach judge ./svc</text>
+            <text x="20" y="24" font-size="12" fill="#64748b" font-family="ui-monospace, Menlo, monospace">deadpath judge ./svc</text>
             <rect x="20" y="40" width="150" height="88" rx="12" fill="#fff" stroke="#e2e8f0"/>
             <text x="95" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Prosecution</text>
             <text x="95" y="90" text-anchor="middle" font-size="11" fill="#64748b">no importers</text>
@@ -263,7 +263,7 @@
         <div class="reveal">
           <span class="eyebrow">Guided, dynamic workflow</span>
           <h2>The agent gets a checklist, not a codebase.</h2>
-          <p class="lead"><code>unreach.workflow</code> emits verify → edit → validate → remember steps shaped by the detected stack: grep this symbol, read these 40 lines, run <code>go test ./...</code> or <code>pytest -q</code> or <code>dotnet build</code>, then record the decision.</p>
+          <p class="lead"><code>deadpath.workflow</code> emits verify → edit → validate → remember steps shaped by the detected stack: grep this symbol, read these 40 lines, run <code>go test ./...</code> or <code>pytest -q</code> or <code>dotnet build</code>, then record the decision.</p>
           <ul>
             <li><strong>Optimal LLM use.</strong> <code>block</code> findings are never sent to a model (the evidence suffices); <code>note</code> findings are never sent (too weak). <code>warn</code> findings go once, batched, as compact packets — never file bodies.</li>
             <li><strong>Cached verdicts.</strong> Each verdict is stored by evidence digest; an unchanged finding is never asked about twice.</li>
@@ -303,7 +303,7 @@
         <div class="reveal">
           <span class="eyebrow">Long-term memory</span>
           <h2>Session two costs less than session one.</h2>
-          <p class="lead"><code>.unreach/memory.json</code> keeps parsed facts by content hash, finding history, your decisions and triage verdicts. On a repeat visit the agent receives one-liners for known findings, nothing for acknowledged ones, and only the essentials of the profile.</p>
+          <p class="lead"><code>.deadpath/memory.json</code> keeps parsed facts by content hash, finding history, your decisions and triage verdicts. On a repeat visit the agent receives one-liners for known findings, nothing for acknowledged ones, and only the essentials of the profile.</p>
           <ul>
             <li>Unchanged files are never re-parsed.</li>
             <li><code>scan --only-new</code> turns a legacy backlog into a CI ratchet: only new dead code fails.</li>
@@ -312,7 +312,7 @@
           <a class="btn ghost" href="memory.html">How memory saves tokens</a>
         </div>
         <div class="art reveal d1">
-          <p class="small muted" style="margin:0 0 14px">Tokens per <code>unreach.scan</code> packet on the bundled fixture (≈4 chars/token)</p>
+          <p class="small muted" style="margin:0 0 14px">Tokens per <code>deadpath.scan</code> packet on the bundled fixture (≈4 chars/token)</p>
           <div class="bars">
             <div class="bar"><span>First visit, full packet</span><div class="track"><div class="fill" style="--w:100%"></div></div><b>708</b></div>
             <div class="bar"><span>Repeat visit, compact</span><div class="track"><div class="fill ok" style="--w:42%"></div></div><b>296</b></div>
@@ -358,28 +358,28 @@
         <div class="section-head reveal">
           <span class="eyebrow">Plugins</span>
           <h2>Thin plugins. One MCP engine.</h2>
-          <p>Claude Code, Cursor and Codex each get a skill that teaches the agent the loop: <code>scan → workflow → verify → remember</code>. All three talk to the same <code>unreach mcp</code> stdio server.</p>
+          <p>Claude Code, Cursor and Codex each get a skill that teaches the agent the loop: <code>scan → workflow → verify → remember</code>. All three talk to the same <code>deadpath mcp</code> stdio server.</p>
         </div>
         <div class="grid cols-3">
           <article class="card reveal">
             <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg></div>
             <h3>Claude Code</h3>
-            <pre><code>/plugin marketplace add wolfxops/unreach
-/plugin install unreach</code></pre>
+            <pre><code>/plugin marketplace add wolfxops/deadpath
+/plugin install deadpath</code></pre>
             <p>Skill + MCP manifest. Ask about unused code and Claude runs the loop.</p>
           </article>
           <article class="card reveal d1">
             <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 8-16 8z"/></svg></div>
             <h3>Cursor</h3>
-            <pre><code>{ "mcpServers": { "unreach": {
-    "command": "unreach", "args": ["mcp"] } } }</code></pre>
+            <pre><code>{ "mcpServers": { "deadpath": {
+    "command": "deadpath", "args": ["mcp"] } } }</code></pre>
             <p>Rule + skill stop Cursor from guessing dead code without a scan.</p>
           </article>
           <article class="card reveal d2">
             <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
             <h3>Codex</h3>
-            <pre><code>[mcp_servers.unreach]
-command = "unreach"
+            <pre><code>[mcp_servers.deadpath]
+command = "deadpath"
 args = ["mcp"]</code></pre>
             <p>Add to <code>~/.codex/config.toml</code>. Same server, same findings.</p>
           </article>
@@ -395,13 +395,13 @@ args = ["mcp"]</code></pre>
             <p>The fixture scan needs no API key and no network. You should see an orphan file and an unused export as <code>block</code>, and an ambiguous export as <code>warn</code>.</p>
             <div class="btn-row">
               <a class="btn ghost" href="install.html">Install guide</a>
-              <a class="btn ghost" href="https://github.com/wolfxops/unreach">Star on GitHub</a>
+              <a class="btn ghost" href="https://github.com/wolfxops/deadpath">Star on GitHub</a>
             </div>
           </div>
           <pre><code>pip install -e .
-unreach scan --mock
-unreach workflow --mock
-unreach languages</code></pre>
+deadpath scan --mock
+deadpath workflow --mock
+deadpath languages</code></pre>
         </div>
       </div>
     </section>
@@ -413,7 +413,7 @@ unreach languages</code></pre>
       <div class="house">
         <span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span>
         <span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span>
-        <span class="tag brand"><strong>Unreach</strong>&nbsp;unused code in the editor</span>
+        <span class="tag brand"><strong>Deadpath</strong>&nbsp;unused code in the editor</span>
       </div>
     </div>
   </footer>

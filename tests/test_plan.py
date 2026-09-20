@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from unreach.plan import build_plan, plan_payload
-from unreach.scan import scan_path
+from deadpath.plan import build_plan, plan_payload
+from deadpath.scan import scan_path
 
 DEADAPP = Path(__file__).resolve().parents[1] / "fixtures" / "deadapp"
 

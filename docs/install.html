@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Install — Unreach</title>
-  <meta name="description" content="Install Unreach: Python 3.10+, no vendor SDKs, no API keys for scan or plan.">
+  <title>Install — Deadpath</title>
+  <meta name="description" content="Install Deadpath: Python 3.10+, no vendor SDKs, no API keys for scan or plan.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="index.html"><svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Unreach</a>
+      <a class="brand" href="index.html"><svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Deadpath</a>
       <nav class="primary">
         <a href="install.html" aria-current="page">Install</a>
         <a href="cli.html">CLI</a>
@@ -21,7 +21,7 @@
         <a href="memory.html">Memory</a>
         <a href="plugins.html">Plugins</a>
         <a href="research.html">Research</a>
-        <a class="gh" href="https://github.com/wolfxops/unreach">GitHub</a>
+        <a class="gh" href="https://github.com/wolfxops/deadpath">GitHub</a>
       </nav>
     </div>
   </header>
@@ -32,40 +32,40 @@
     <p class="lead reveal d2">Python 3.10+. No vendor SDKs. No API keys for <code>scan</code>, <code>plan</code>, <code>workflow</code> or <code>triage</code> — the model is optional everywhere.</p>
 
     <ol class="steps reveal d3">
-      <li><span class="n">1</span><div><h4>Install from source</h4><p>Editable install puts the <code>unreach</code> command on your PATH.</p>
-<pre><code>git clone https://github.com/wolfxops/unreach.git
-cd unreach
+      <li><span class="n">1</span><div><h4>Install from source</h4><p>Editable install puts the <code>deadpath</code> command on your PATH.</p>
+<pre><code>git clone https://github.com/wolfxops/deadpath.git
+cd deadpath
 pip install -e ".[dev]"</code></pre></div></li>
       <li><span class="n">2</span><div><h4>First win: the fixture scan</h4><p>Offline, deterministic, exit code <code>1</code> because high-confidence dead code exists.</p>
-<pre><code>unreach scan --mock</code></pre>
+<pre><code>deadpath scan --mock</code></pre>
 <p>You should see <code>pkg/orphan.py</code> as an <code>orphan_file</code> block (0.92), <code>dead_symbol</code> as an <code>unused_export</code> block (0.88), and <code>maybe_dead</code> as a <code>warn</code> (0.58) because its module is imported whole.</p></div></li>
       <li><span class="n">3</span><div><h4>See the judge table</h4><p>Prosecution vs devil's advocate. The fixture's <code>pkg/nightly.py</code> is a cron job, not dead code.</p>
-<pre><code>unreach judge --mock</code></pre></div></li>
+<pre><code>deadpath judge --mock</code></pre></div></li>
       <li><span class="n">4</span><div><h4>See the guided workflow</h4><p>Verify → edit → validate → remember steps, with judge and triage verdicts (heuristic when no key is set).</p>
-<pre><code>unreach workflow --mock</code></pre></div></li>
-      <li><span class="n">5</span><div><h4>Scan your own repository</h4><p>Languages and frameworks are detected automatically. Memory is created at <code>.unreach/memory.json</code>; add it to <code>.gitignore</code> or commit it to share decisions.</p>
+<pre><code>deadpath workflow --mock</code></pre></div></li>
+      <li><span class="n">5</span><div><h4>Scan your own repository</h4><p>Languages and frameworks are detected automatically. Memory is created at <code>.deadpath/memory.json</code>; add it to <code>.gitignore</code> or commit it to share decisions.</p>
 <pre><code>cd ~/code/your-service
-unreach scan --format md
-unreach scan --format sarif &gt; unreach.sarif</code></pre></div></li>
+deadpath scan --format md
+deadpath scan --format sarif &gt; deadpath.sarif</code></pre></div></li>
       <li><span class="n">6</span><div><h4>Connect your agent</h4><p>One stdio MCP server for Claude Code, Cursor and Codex.</p>
-<pre><code>unreach mcp</code></pre>
-<p>Tools: <code>unreach.scan</code>, <code>unreach.judge</code>, <code>unreach.workflow</code>, <code>unreach.triage</code>, <code>unreach.plan</code>, <code>unreach.explain</code>, <code>unreach.remember</code>, <code>unreach.memory</code>, <code>unreach.languages</code>. Plugins show a markdown table. See <a href="plugins.html">Plugins</a>.</p></div></li>
+<pre><code>deadpath mcp</code></pre>
+<p>Tools: <code>deadpath.scan</code>, <code>deadpath.judge</code>, <code>deadpath.workflow</code>, <code>deadpath.triage</code>, <code>deadpath.plan</code>, <code>deadpath.explain</code>, <code>deadpath.remember</code>, <code>deadpath.memory</code>, <code>deadpath.languages</code>. Plugins show a markdown table. See <a href="plugins.html">Plugins</a>.</p></div></li>
     </ol>
 
     <h2>Optional: enable the model</h2>
     <p>Only <code>explain</code> and <code>triage</code> ever call a model, over plain OpenAI-compatible HTTP.</p>
-    <pre><code>export UNREACH_API_KEY=...          # or OPENAI_API_KEY
-export UNREACH_BASE_URL=https://api.openai.com   # any OpenAI-compatible endpoint
-export UNREACH_MODEL=gpt-4o-mini    # optional
-unreach triage                      # one batched call for warn findings; verdicts cached</code></pre>
+    <pre><code>export DEADPATH_API_KEY=...          # or OPENAI_API_KEY
+export DEADPATH_BASE_URL=https://api.openai.com   # any OpenAI-compatible endpoint
+export DEADPATH_MODEL=gpt-4o-mini    # optional
+deadpath triage                      # one batched call for warn findings; verdicts cached</code></pre>
     <div class="callout ok"><p><strong>Budget guarantee.</strong> Block and note findings are never sent. Warn findings are sent once, at most <code>--max-items</code> (default 8) per run, as evidence packets without file bodies. Unchanged findings are never re-asked.</p></div>
 
     <h2>GitHub Action</h2>
-    <pre><code>- uses: wolfxops/unreach@main
+    <pre><code>- uses: wolfxops/deadpath@main
   with:
     path: .
     format: sarif</code></pre>
-    <p>Use <code>unreach scan --only-new</code> in CI to fail only on <em>new</em> high-confidence dead code while a legacy backlog is worked down.</p>
+    <p>Use <code>deadpath scan --only-new</code> in CI to fail only on <em>new</em> high-confidence dead code while a legacy backlog is worked down.</p>
 
     <h2>Run the tests</h2>
     <pre><code>pytest -q</code></pre>
@@ -74,7 +74,7 @@ unreach triage                      # one batched call for warn findings; verdic
   <footer class="site-footer">
     <div class="container">
       <div>Apache-2.0 · Vivek Singh · <a href="https://x.com/wolfxops">wolfxops</a> · Pune</div>
-      <div class="house"><span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span><span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span><span class="tag brand"><strong>Unreach</strong>&nbsp;unused code in the editor</span></div>
+      <div class="house"><span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span><span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span><span class="tag brand"><strong>Deadpath</strong>&nbsp;unused code in the editor</span></div>
     </div>
   </footer>
   <script src="assets/site.js" defer></script>

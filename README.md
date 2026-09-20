@@ -1,4 +1,4 @@
-# Unreach
+# Deadpath
 
 Find the code your agents keep rewriting around.
 
@@ -12,24 +12,24 @@ memory** so every following session costs fewer tokens.
 
 One engine, not three products:
 
-1. Deterministic CLI scanner (`unreach scan`)
-2. One stdio **MCP** server (`unreach.scan`, `unreach.judge`, `unreach.workflow`, `unreach.triage`, `unreach.plan`, `unreach.explain`, `unreach.remember`, `unreach.memory`, `unreach.languages`)
+1. Deterministic CLI scanner (`deadpath scan`)
+2. One stdio **MCP** server (`deadpath.scan`, `deadpath.judge`, `deadpath.workflow`, `deadpath.triage`, `deadpath.plan`, `deadpath.explain`, `deadpath.remember`, `deadpath.memory`, `deadpath.languages`)
 3. Thin plugins: **Claude Code**, **Cursor**, **Codex**
 
 Detection does **not** require an LLM. The model only ranks and explains, and
 only for ambiguous findings. Auto-delete is forbidden; `plan` and `workflow`
 emit ordered suggestions only.
 
-Docs: https://wolfxops.github.io/unreach/
+Docs: https://wolfxops.github.io/deadpath/
 
 ## Install
 
 ```bash
 pip install -e .
-unreach scan --mock        # fixture scan, no API keys, exit 1 (block findings present)
-unreach judge --mock       # prosecution vs devil's advocate table
-unreach workflow --mock    # guided checklist with judge + triage verdicts
-unreach languages          # support matrix
+deadpath scan --mock        # fixture scan, no API keys, exit 1 (block findings present)
+deadpath judge --mock       # prosecution vs devil's advocate table
+deadpath workflow --mock    # guided checklist with judge + triage verdicts
+deadpath languages          # support matrix
 ```
 
 Python 3.10+. Dev:
@@ -42,7 +42,7 @@ pytest -q
 ## Built around the pain points
 
 Research across knip / ts-prune / Vulture / deptry issue trackers and agent
-post-mortems (see [research](https://wolfxops.github.io/unreach/research.html))
+post-mortems (see [research](https://wolfxops.github.io/deadpath/research.html))
 keeps surfacing the same complaints. Each maps to a mechanism:
 
 | Pain point | Mechanism |
@@ -51,12 +51,12 @@ keeps surfacing the same complaints. Each maps to a mechanism:
 | Framework code looks dead (FastAPI routes, Django models, Spring beans, Rails models, Flutter widgets…) | **45-framework registry**: entry roles, registration decorators/annotations, base classes; detected from imports *and* manifests |
 | Auto-delete breaks things; agents trust tool output blindly | **Never delete.** `plan` + `workflow` require verify → validate → approval |
 | Legacy debt blocks adoption; need a CI ratchet | **Memory** tracks first/last seen; `scan --only-new` fails only on new `block` |
-| Enterprise wants code-scanning integration and an audit trail | `--format sarif`; decisions with notes in `.unreach/memory.json` |
+| Enterprise wants code-scanning integration and an audit trail | `--format sarif`; decisions with notes in `.deadpath/memory.json` |
 | Agents re-read the repo every session and burn tokens | **Compact packets** (−58% on a repeat visit, measured on the fixture); parse cache by content hash; workflow names exact files |
 | "AI" tools spend model tokens on what a graph already knows | **Budgeted triage**: model sees `warn` findings only, once, batched, as evidence packets; verdicts cached by evidence digest |
 | Agents delete a scheduler job / Lambda handler / feature-flagged module | **Judge layer**: 30+ named counter-hypotheses with `file:line` evidence; verdict `remove` / `verify` / `keep`; identification check; never auto-delete |
 | Dead code is also risky (eval, pickle, `verify=False`, leftover secrets) | **Security lens**: markers reported by line number only; `remove_first` goes to the top of the workflow |
-| Agent output is a wall of prose the developer cannot scan | **Tabular plugin output** (`--format table` / MCP `unreach.judge`): severity, confidence, devil's advocate, next check, security, effort |
+| Agent output is a wall of prose the developer cannot scan | **Tabular plugin output** (`--format table` / MCP `deadpath.judge`): severity, confidence, devil's advocate, next check, security, effort |
 | Polyglot estates, single-language tools | One `Finding` shape across 16 languages with **declared graph precision** |
 
 ## Languages and frameworks
@@ -75,24 +75,24 @@ Playwright/Cypress · Gin/Echo/Fiber/Chi, Cobra · Actix/Axum/Rocket, Tokio, Cla
 Spring, Quarkus, Micronaut, JUnit, Ktor, Android · ASP.NET Core, xUnit/NUnit ·
 Rails, Sinatra, RSpec · Laravel, Symfony · SwiftUI/UIKit, Vapor · Flutter · Phoenix.
 
-`unreach languages` prints the live matrix with validation commands. Adding a
-language is one entry in `unreach/polyglot.py`.
+`deadpath languages` prints the live matrix with validation commands. Adding a
+language is one entry in `deadpath/polyglot.py`.
 
 ## CLI
 
 ```bash
-unreach scan      [PATH] [--mock] [--format json|md|sarif|table] [--lang LANG]
+deadpath scan      [PATH] [--mock] [--format json|md|sarif|table] [--lang LANG]
                          [--only-new] [--compact] [--min-confidence 0.25]
                          [--no-memory] [--no-judge]
-unreach judge     [PATH] [--format table|md|json]    # devil's advocate table (default)
-unreach plan      [PATH] [--format json|md|table]    # ordered suggestions, never deletes
-unreach workflow  [PATH] [--format json|md|table] [--max 12] [--no-triage] [--no-llm]
-unreach triage    [PATH] [--format json|md|table] [--max-items 8] [--no-llm]
-unreach explain   FINDING_ID [PATH]                      # optional LLM; heuristic if no key
-unreach remember  FINDING_ID --decision keep|false_positive|resolved [--note ...] [--path PATH]
-unreach memory    [PATH] [--clear] [--forget FINDING_ID]
-unreach languages
-unreach mcp                                              # stdio MCP
+deadpath judge     [PATH] [--format table|md|json]    # devil's advocate table (default)
+deadpath plan      [PATH] [--format json|md|table]    # ordered suggestions, never deletes
+deadpath workflow  [PATH] [--format json|md|table] [--max 12] [--no-triage] [--no-llm]
+deadpath triage    [PATH] [--format json|md|table] [--max-items 8] [--no-llm]
+deadpath explain   FINDING_ID [PATH]                      # optional LLM; heuristic if no key
+deadpath remember  FINDING_ID --decision keep|false_positive|resolved [--note ...] [--path PATH]
+deadpath memory    [PATH] [--clear] [--forget FINDING_ID]
+deadpath languages
+deadpath mcp                                              # stdio MCP
 ```
 
 Exit `0` if no high-confidence dead code, `1` if any `block` finding (only new
@@ -139,7 +139,7 @@ are dropped *before* the judge so a `keep` verdict cannot hide the evidence.
 
 ### Judge / devil's advocate
 
-`unreach judge` / MCP `unreach.judge` is a second deterministic pass. The scan is
+`deadpath judge` / MCP `deadpath.judge` is a second deterministic pass. The scan is
 the prosecution; the critic checks named counter-hypotheses against real artifacts
 and returns `file:line` evidence:
 
@@ -160,13 +160,13 @@ The fixture adds `pkg/nightly.py` (keep — `ops/crontab:2`) and
 
 ### Guided workflow and LLM budget
 
-`unreach workflow` / MCP `unreach.workflow` returns ordered steps tuned to the
+`deadpath workflow` / MCP `deadpath.workflow` returns ordered steps tuned to the
 detected languages and frameworks:
 
 1. **verify** — targeted `grep` and bounded `read` per finding; framework wiring and DI/reflection checks
 2. **edit** — propose a reviewable patch; deletion requires explicit approval
 3. **validate** — `python -c "import pkg"` / `mypy` / `pytest`; `npx tsc --noEmit` / `vitest`; `go build && go test`; `cargo check && cargo test`; `./gradlew test`; `dotnet build`; `bundle exec rspec`; `phpunit`; `swift test`; `flutter test`; `mix test`; `ctest`; `busted`; `prove`; then re-scan
-4. **remember** — `unreach.remember` so the next session starts from the new baseline
+4. **remember** — `deadpath.remember` so the next session starts from the new baseline
 
 The model is used deliberately, not by default:
 
@@ -184,7 +184,8 @@ per-step `budget_hint`s ("a single grep is enough" vs "read the grep hits").
 
 ### Long-term memory
 
-`.unreach/memory.json` (next to the scanned root, or `UNREACH_MEMORY_DIR`):
+`.deadpath/memory.json` (next to the scanned root, or `DEADPATH_MEMORY_DIR`).
+A leftover `.unreach/` directory is renamed to `.deadpath/` on the next scan.
 
 - `files` — SHA-256 → extracted facts, every language; unchanged files are not re-parsed
 - `findings` — first/last seen, seen_count, status `open`/`resolved`
@@ -192,7 +193,7 @@ per-step `budget_hint`s ("a single grep is enough" vs "read the grep hits").
 - `llm` — triage verdicts keyed by evidence digest
 - `runs` — last 50 runs with delta and cache stats
 
-MCP `unreach.scan` returns full evidence for **new** findings only,
+MCP `deadpath.scan` returns full evidence for **new** findings only,
 `persisting_brief` one-liners for known ones, omits acknowledged ones, trims the
 profile on repeat visits, and reports `tokens_saved_estimate`. Never stores source
 or secrets; safe to delete or commit (commit it for a shared CI ratchet and shared
@@ -209,23 +210,23 @@ The fixture `fixtures/deadapp` produces:
 ## MCP
 
 ```bash
-unreach mcp
+deadpath mcp
 ```
 
 | Tool | Input | Output |
 |---|---|---|
-| `unreach.scan` | `{ path?, lang?, only_new?, full?, min_confidence?, memory?, judge?, format? }` | findings JSON (compact) or markdown table |
-| `unreach.judge` | `{ path?, format? }` | **table by default**: sev, confidence, judge, devil's advocate, next check, security, effort |
-| `unreach.workflow` | `{ path?, max_findings?, triage?, format? }` | verify/edit/validate/remember; `kept_by_judge`, `security_first`, `quick_wins` |
-| `unreach.triage` | `{ path?, max_items?, llm?, format? }` | verdicts for warn findings; packets include the judge brief; model is a *second* devil's advocate |
-| `unreach.plan` | `{ path? }` | ordered deletions/refactors, **no file writes** |
-| `unreach.explain` | `{ id }` | paragraph (heuristic if no key) |
-| `unreach.remember` | `{ id, decision, note?, path? }` | stores a decision in memory |
-| `unreach.memory` | `{ path?, clear? }` | runs, cache stats, open findings, decisions, verdicts |
-| `unreach.languages` | `{}` | support matrix |
+| `deadpath.scan` | `{ path?, lang?, only_new?, full?, min_confidence?, memory?, judge?, format? }` | findings JSON (compact) or markdown table |
+| `deadpath.judge` | `{ path?, format? }` | **table by default**: sev, confidence, judge, devil's advocate, next check, security, effort |
+| `deadpath.workflow` | `{ path?, max_findings?, triage?, format? }` | verify/edit/validate/remember; `kept_by_judge`, `security_first`, `quick_wins` |
+| `deadpath.triage` | `{ path?, max_items?, llm?, format? }` | verdicts for warn findings; packets include the judge brief; model is a *second* devil's advocate |
+| `deadpath.plan` | `{ path? }` | ordered deletions/refactors, **no file writes** |
+| `deadpath.explain` | `{ id }` | paragraph (heuristic if no key) |
+| `deadpath.remember` | `{ id, decision, note?, path? }` | stores a decision in memory |
+| `deadpath.memory` | `{ path?, clear? }` | runs, cache stats, open findings, decisions, verdicts |
+| `deadpath.languages` | `{}` | support matrix |
 
 OpenAI-compatible HTTP is used only by `explain` and `triage`, and only if
-`UNREACH_API_KEY` or `OPENAI_API_KEY` is set (`UNREACH_BASE_URL`, `UNREACH_MODEL`
+`DEADPATH_API_KEY` or `OPENAI_API_KEY` is set (`DEADPATH_BASE_URL`, `DEADPATH_MODEL`
 optional). No vendor SDKs.
 
 ## Plugins
@@ -237,8 +238,8 @@ Present findings as the markdown table the tools return; do not rewrite them as 
 ### Claude Code
 
 ```text
-/plugin marketplace add wolfxops/unreach
-/plugin install unreach
+/plugin marketplace add wolfxops/deadpath
+/plugin install deadpath
 ```
 
 Manifest: `plugins/claude/.claude-plugin/plugin.json`.
@@ -250,8 +251,8 @@ Manifest: `plugins/cursor/.cursor-plugin/plugin.json`. Skill + rule: do not gues
 ```json
 {
   "mcpServers": {
-    "unreach": {
-      "command": "unreach",
+    "deadpath": {
+      "command": "deadpath",
       "args": ["mcp"]
     }
   }
@@ -263,15 +264,15 @@ Manifest: `plugins/cursor/.cursor-plugin/plugin.json`. Skill + rule: do not gues
 See `plugins/codex/README.md`. Stdio command for `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.unreach]
-command = "unreach"
+[mcp_servers.deadpath]
+command = "deadpath"
 args = ["mcp"]
 ```
 
 ## GitHub Action
 
 ```yaml
-- uses: wolfxops/unreach@main
+- uses: wolfxops/deadpath@main
   with:
     path: .
     format: sarif
@@ -281,13 +282,13 @@ args = ["mcp"]
 
 GitHub Pages: enable Settings → Pages → Branch: main → folder: `/docs`
 
-Site: https://wolfxops.github.io/unreach/
+Site: https://wolfxops.github.io/deadpath/
 
 ## House map
 
 - **Cosen** — runtime cost, traces, security
 - **Quorum** — pre-merge four-desk PR review
-- **Unreach** — whole-tree unused/unreachable code in the editor
+- **Deadpath** — whole-tree unused/unreachable code in the editor
 
 ## License
 

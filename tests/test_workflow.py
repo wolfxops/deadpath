@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from unreach.cli import main
-from unreach.mcp_server import Session, handle_request
-from unreach.render import render_sarif, render_workflow
-from unreach.scan import scan_repo
-from unreach.workflow import build_workflow
+from deadpath.cli import main
+from deadpath.mcp_server import Session, handle_request
+from deadpath.render import render_sarif, render_workflow
+from deadpath.scan import scan_repo
+from deadpath.workflow import build_workflow
 
 DEADAPP = Path(__file__).resolve().parents[1] / "fixtures" / "deadapp"
 
@@ -25,7 +25,7 @@ def test_python_workflow_has_verify_edit_validate_remember() -> None:
     greps = {s.get("grep") for s in payload["steps"]}
     assert "dead_symbol" in greps and "pkg.orphan" in greps
     md = render_workflow(payload)
-    assert "## verify" in md and "unreach.remember" in md
+    assert "## verify" in md and "deadpath.remember" in md
 
 
 def test_typescript_workflow_uses_tsc(tmp_path: Path) -> None:
@@ -54,7 +54,7 @@ def test_workflow_cli_and_mcp(capsys) -> None:
             "jsonrpc": "2.0",
             "id": 1,
             "method": "tools/call",
-            "params": {"name": "unreach.workflow", "arguments": {"path": str(DEADAPP), "memory": False}},
+            "params": {"name": "deadpath.workflow", "arguments": {"path": str(DEADAPP), "memory": False}},
         },
         session,
     )
@@ -67,7 +67,7 @@ def test_sarif_output() -> None:
     sarif = json.loads(render_sarif(result.findings))
     assert sarif["version"] == "2.1.0"
     run = sarif["runs"][0]
-    assert run["tool"]["driver"]["name"] == "unreach"
+    assert run["tool"]["driver"]["name"] == "deadpath"
     assert {r["ruleId"] for r in run["results"]} == {"orphan_file", "unused_export"}
     assert all("confidence" in r["properties"] for r in run["results"])
 
@@ -75,8 +75,8 @@ def test_sarif_output() -> None:
 def test_mcp_scan_compact_after_memory(isolated_memory: Path) -> None:
     session = Session()
     args = {"path": str(DEADAPP)}
-    first = handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "unreach.scan", "arguments": args}}, session)
-    second = handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "unreach.scan", "arguments": args}}, session)
+    first = handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "deadpath.scan", "arguments": args}}, session)
+    second = handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "deadpath.scan", "arguments": args}}, session)
     first_payload = json.loads(first["result"]["content"][0]["text"])
     second_payload = json.loads(second["result"]["content"][0]["text"])
     assert len(first_payload["findings"]) == 5
@@ -84,10 +84,10 @@ def test_mcp_scan_compact_after_memory(isolated_memory: Path) -> None:
     assert len(second_payload["persisting_brief"]) == 5
     assert len(second["result"]["content"][0]["text"]) < len(first["result"]["content"][0]["text"])
     remembered = handle_request(
-        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "unreach.remember", "arguments": {**args, "id": "orphan_file:pkg/orphan.py", "decision": "false_positive", "note": "plugin"}}},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "deadpath.remember", "arguments": {**args, "id": "orphan_file:pkg/orphan.py", "decision": "false_positive", "note": "plugin"}}},
         session,
     )
     assert '"decision": "false_positive"' in remembered["result"]["content"][0]["text"]
-    third = json.loads(handle_request({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "unreach.scan", "arguments": args}}, session)["result"]["content"][0]["text"])
+    third = json.loads(handle_request({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "deadpath.scan", "arguments": args}}, session)["result"]["content"][0]["text"])
     assert third["suppressed"][0]["id"] == "orphan_file:pkg/orphan.py"
     assert all(b["id"] != "orphan_file:pkg/orphan.py" for b in third.get("persisting_brief", []))

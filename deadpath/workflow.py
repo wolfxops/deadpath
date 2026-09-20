@@ -7,10 +7,10 @@ optional shell ``command`` or ``read`` target, and a ``why``.
 
 The workflow is deliberately token-frugal: it points the agent at the exact
 files and grep patterns to inspect instead of "read the repo". Each finding
-carries the judge's critique (``unreach.critic``): findings the judge ruled
+carries the judge's critique (``deadpath.critic``): findings the judge ruled
 ``keep`` are listed once and skipped, and the verify step for every other
 finding is the judge's ``next_check`` — the one artifact that settles the case.
-When triage verdicts are supplied (from ``unreach.triage``), ambiguous findings
+When triage verdicts are supplied (from ``deadpath.triage``), ambiguous findings
 are additionally ordered and annotated by the model's second opinion.
 """
 
@@ -19,9 +19,9 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from unreach.langs import LANGUAGE_NAMES, PY_SUFFIXES, TS_SUFFIXES, Profile
-from unreach.polyglot import LANGS, lang_for_suffix
-from unreach.scan import Finding
+from deadpath.langs import LANGUAGE_NAMES, PY_SUFFIXES, TS_SUFFIXES, Profile
+from deadpath.polyglot import LANGS, lang_for_suffix
+from deadpath.scan import Finding
 
 VERDICT_ORDER = {"likely_dead": 0, None: 1, "verify": 2, "keep": 3}
 
@@ -107,7 +107,7 @@ def build_workflow(
             Step(
                 id=nxt("ctx"),
                 phase="verify",
-                action=f"Skip {len(kept)} finding(s) ruled `keep` by the judge/triage (a scheduler, entry point, registry, or flag names them). Record them with unreach.remember if you agree.",
+                action=f"Skip {len(kept)} finding(s) ruled `keep` by the judge/triage (a scheduler, entry point, registry, or flag names them). Record them with deadpath.remember if you agree.",
                 why="The devil's advocate already found a plausible live path with file:line evidence; re-verifying is the most common token sink.",
                 budget_hint=", ".join(kept[:6]) + (" ..." if len(kept) > 6 else ""),
                 judge="; ".join(_judge_label(f) or "" for f in ranked if f.id in kept[:3]) or None,
@@ -134,14 +134,14 @@ def build_workflow(
         Step(
             id=nxt("mem"),
             phase="remember",
-            action="Record a decision for each finding you reviewed via unreach.remember (keep | false_positive | resolved).",
-            why="Decisions are stored in .unreach/memory.json so the next session does not re-triage the same findings.",
-            tool="unreach.remember",
+            action="Record a decision for each finding you reviewed via deadpath.remember (keep | false_positive | resolved).",
+            why="Decisions are stored in .deadpath/memory.json so the next session does not re-triage the same findings.",
+            tool="deadpath.remember",
         )
     )
 
     return {
-        "tool": "unreach",
+        "tool": "deadpath",
         "auto_delete": False,
         "profile": profile.to_dict(),
         "policy": {
@@ -423,9 +423,9 @@ def _validation_steps(profile: Profile, nxt, selected: list[Finding]) -> list[St
         Step(
             id=nxt("validate"),
             phase="validate",
-            action="Re-run unreach.scan and confirm the finding is gone and no new block findings appeared.",
+            action="Re-run deadpath.scan and confirm the finding is gone and no new block findings appeared.",
             why="Closes the loop and updates memory so the next session starts from the new baseline.",
-            tool="unreach.scan",
+            tool="deadpath.scan",
         )
     )
     return steps

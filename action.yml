@@ -1,4 +1,4 @@
-name: Unreach Scan
+name: Deadpath Scan
 description: Find dead and unused code. Deterministic; never deletes files.
 author: Vivek Singh
 branding:
@@ -28,7 +28,7 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
-    - name: Install Unreach
+    - name: Install Deadpath
       shell: bash
       run: python -m pip install "${{ github.action_path }}"
     - name: Scan
@@ -36,4 +36,4 @@ runs:
       run: |
         extra=()
         if [ "${{ inputs.mock }}" = "true" ]; then extra+=(--mock); fi
-        unreach scan "${{ inputs.path }}" --format "${{ inputs.format }}" --lang "${{ inputs.lang }}" "${extra[@]}"
+        deadpath scan "${{ inputs.path }}" --format "${{ inputs.format }}" --lang "${{ inputs.lang }}" "${extra[@]}"

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from unreach.scan import Finding, finding_id
+from deadpath.scan import Finding, finding_id
 
 
 def canned_findings() -> list[Finding]:

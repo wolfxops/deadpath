@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "unreach"
+name = "deadpath"
 version = "0.1.0"
 description = "Find the code your agents keep rewriting around."
 readme = "README.md"
@@ -28,15 +28,15 @@ dependencies = []
 dev = ["pytest>=7.4"]
 
 [project.scripts]
-unreach = "unreach.cli:main"
+deadpath = "deadpath.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/wolfxops/unreach"
-Documentation = "https://wolfxops.github.io/unreach/"
-Repository = "https://github.com/wolfxops/unreach"
+Homepage = "https://github.com/wolfxops/deadpath"
+Documentation = "https://wolfxops.github.io/deadpath/"
+Repository = "https://github.com/wolfxops/deadpath"
 
 [tool.setuptools.packages.find]
-include = ["unreach*"]
+include = ["deadpath*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

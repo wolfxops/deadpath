@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CLI — Unreach</title>
-  <meta name="description" content="Unreach CLI reference: scan, plan, workflow, triage, explain, remember, memory, languages, mcp. Finding schema and JSON envelope.">
+  <title>CLI — Deadpath</title>
+  <meta name="description" content="Deadpath CLI reference: scan, plan, workflow, triage, explain, remember, memory, languages, mcp. Finding schema and JSON envelope.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="index.html"><svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Unreach</a>
+      <a class="brand" href="index.html"><svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Deadpath</a>
       <nav class="primary">
         <a href="install.html">Install</a>
         <a href="cli.html" aria-current="page">CLI</a>
@@ -21,7 +21,7 @@
         <a href="memory.html">Memory</a>
         <a href="plugins.html">Plugins</a>
         <a href="research.html">Research</a>
-        <a class="gh" href="https://github.com/wolfxops/unreach">GitHub</a>
+        <a class="gh" href="https://github.com/wolfxops/deadpath">GitHub</a>
       </nav>
     </div>
   </header>
@@ -31,18 +31,18 @@
     <h1 class="reveal d1">One binary. Nine verbs.</h1>
     <p class="lead reveal d2">Everything the MCP server exposes is also a command, so CI and humans see exactly what the agent sees. Plugins render <code>--format table</code> as a native markdown table.</p>
 
-    <pre class="reveal d3"><code>unreach scan      [PATH] [--mock] [--format json|md|sarif|table] [--lang LANG]
+    <pre class="reveal d3"><code>deadpath scan      [PATH] [--mock] [--format json|md|sarif|table] [--lang LANG]
                          [--only-new] [--compact] [--min-confidence 0.25]
                          [--no-memory] [--no-judge]
-unreach judge     [PATH] [--format table|md|json]
-unreach plan      [PATH] [--format json|md|table]
-unreach workflow  [PATH] [--format json|md|table] [--max 12] [--no-triage] [--no-llm]
-unreach triage    [PATH] [--format json|md|table] [--max-items 8] [--no-llm]
-unreach explain   FINDING_ID [PATH]
-unreach remember  FINDING_ID --decision keep|false_positive|resolved [--note ...] [--path PATH]
-unreach memory    [PATH] [--clear] [--forget FINDING_ID]
-unreach languages
-unreach mcp</code></pre>
+deadpath judge     [PATH] [--format table|md|json]
+deadpath plan      [PATH] [--format json|md|table]
+deadpath workflow  [PATH] [--format json|md|table] [--max 12] [--no-triage] [--no-llm]
+deadpath triage    [PATH] [--format json|md|table] [--max-items 8] [--no-llm]
+deadpath explain   FINDING_ID [PATH]
+deadpath remember  FINDING_ID --decision keep|false_positive|resolved [--note ...] [--path PATH]
+deadpath memory    [PATH] [--clear] [--forget FINDING_ID]
+deadpath languages
+deadpath mcp</code></pre>
 
     <h2>Flags that matter</h2>
     <div class="table-wrap"><table>
@@ -53,9 +53,9 @@ unreach mcp</code></pre>
         <tr><td><code>--only-new</code></td><td>Show only findings not present in memory; exit 1 only for new <code>block</code> findings. This is the CI ratchet.</td></tr>
         <tr><td><code>--compact</code></td><td>JSON: full evidence for new findings, one-liners for persisting ones, trimmed profile and memory summary, plus <code>tokens_saved_estimate</code>.</td></tr>
         <tr><td><code>--min-confidence</code></td><td>Drop findings below the threshold (default 0.25).</td></tr>
-        <tr><td><code>--no-memory</code></td><td>Stateless run; do not read or write <code>.unreach/memory.json</code>.</td></tr>
+        <tr><td><code>--no-memory</code></td><td>Stateless run; do not read or write <code>.deadpath/memory.json</code>.</td></tr>
         <tr><td><code>--no-judge</code></td><td>Skip the devil's advocate pass; report raw scan confidence.</td></tr>
-        <tr><td><code>--format table</code></td><td>GitHub-flavoured markdown table (the plugin-facing format). <code>unreach judge</code> defaults to it.</td></tr>
+        <tr><td><code>--format table</code></td><td>GitHub-flavoured markdown table (the plugin-facing format). <code>deadpath judge</code> defaults to it.</td></tr>
         <tr><td><code>--no-llm</code></td><td>Force heuristic triage even if an API key is set.</td></tr>
         <tr><td><code>--max-items</code></td><td>Cap on findings sent to the model per <code>triage</code> run (default 8). Extra findings receive heuristic verdicts and are deferred.</td></tr>
       </tbody>
@@ -85,7 +85,7 @@ unreach mcp</code></pre>
 
     <h2>Scan JSON envelope</h2>
     <pre><code>{
-  "tool": "unreach", "version": "0.1.0", "auto_delete": false,
+  "tool": "deadpath", "version": "0.1.0", "auto_delete": false,
   "profile": { "languages": {"py": 6, "go": 3}, "primary": "py", "frameworks": ["fastapi"],
                "monorepo": false, "validate_commands": {...}, ... },
   "counts": { "block": 2, "warn": 1, "note": 0, "total": 3 },
@@ -110,7 +110,7 @@ unreach mcp</code></pre>
       "read": ["pkg/hooks.py"], "triage": "verify: dynamic or string reference signal present; ...",
       "budget_hint": "Triage flagged a dynamic/string reference: read the grep hits, not the whole file." },
     { "id": "validate-07", "phase": "validate", "command": "pytest -q", ... },
-    { "id": "mem-09", "phase": "remember", "tool": "unreach.remember", ... }
+    { "id": "mem-09", "phase": "remember", "tool": "deadpath.remember", ... }
   ]
 }</code></pre>
 
@@ -126,19 +126,19 @@ unreach mcp</code></pre>
 }</code></pre>
 
     <h2>Judge</h2>
-    <p><code>unreach judge</code> prints the due-diligence table: prosecution vs devil's advocate, identification, security lens, effort. Default format is <code>table</code>; <code>md</code> adds case-file write-ups; <code>json</code> is the machine envelope. See <a href="judge.html">Judge</a>.</p>
+    <p><code>deadpath judge</code> prints the due-diligence table: prosecution vs devil's advocate, identification, security lens, effort. Default format is <code>table</code>; <code>md</code> adds case-file write-ups; <code>json</code> is the machine envelope. See <a href="judge.html">Judge</a>.</p>
 
     <h2>Plan</h2>
-    <p><code>unreach plan</code> returns an ordered suggestion list ranked by confidence. Unreach never deletes files and never writes a patch in v0.</p>
+    <p><code>deadpath plan</code> returns an ordered suggestion list ranked by confidence. Deadpath never deletes files and never writes a patch in v0.</p>
 
     <h2>Explain</h2>
-    <p>Optional OpenAI-compatible HTTP if <code>UNREACH_API_KEY</code> or <code>OPENAI_API_KEY</code> is set; otherwise a heuristic paragraph that names the signals that mattered. No vendor SDKs.</p>
+    <p>Optional OpenAI-compatible HTTP if <code>DEADPATH_API_KEY</code> or <code>OPENAI_API_KEY</code> is set; otherwise a heuristic paragraph that names the signals that mattered. No vendor SDKs.</p>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <div>Apache-2.0 · Vivek Singh · <a href="https://x.com/wolfxops">wolfxops</a> · Pune</div>
-      <div class="house"><span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span><span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span><span class="tag brand"><strong>Unreach</strong>&nbsp;unused code in the editor</span></div>
+      <div class="house"><span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span><span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span><span class="tag brand"><strong>Deadpath</strong>&nbsp;unused code in the editor</span></div>
     </div>
   </footer>
   <script src="assets/site.js" defer></script>

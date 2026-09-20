@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-DEFAULT_MODEL = os.environ.get("UNREACH_MODEL") or os.environ.get("OPENAI_MODEL") or "gpt-4o-mini"
+DEFAULT_MODEL = os.environ.get("DEADPATH_MODEL") or os.environ.get("OPENAI_MODEL") or "gpt-4o-mini"
 
 
 class LLMUnavailable(RuntimeError):
@@ -19,26 +19,26 @@ class LLMUnavailable(RuntimeError):
 
 
 def api_key() -> str | None:
-    return os.environ.get("UNREACH_API_KEY") or os.environ.get("OPENAI_API_KEY") or None
+    return os.environ.get("DEADPATH_API_KEY") or os.environ.get("OPENAI_API_KEY") or None
 
 
 def base_url() -> str:
     return (
-        os.environ.get("UNREACH_BASE_URL")
+        os.environ.get("DEADPATH_BASE_URL")
         or os.environ.get("OPENAI_BASE_URL")
         or "https://api.openai.com"
     ).rstrip("/")
 
 
 def available() -> bool:
-    return api_key() is not None and os.environ.get("UNREACH_NO_LLM") is None
+    return api_key() is not None and os.environ.get("DEADPATH_NO_LLM") is None
 
 
 def chat(messages: list[dict[str, str]], *, max_tokens: int = 600, json_mode: bool = False, timeout: int = 30) -> tuple[str, dict[str, Any]]:
     """Return (content, usage). Raises LLMUnavailable on any failure."""
     key = api_key()
     if not key:
-        raise LLMUnavailable("no UNREACH_API_KEY / OPENAI_API_KEY")
+        raise LLMUnavailable("no DEADPATH_API_KEY / OPENAI_API_KEY")
     payload: dict[str, Any] = {
         "model": DEFAULT_MODEL,
         "temperature": 0,

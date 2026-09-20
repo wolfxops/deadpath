@@ -1,6 +1,6 @@
 {
-  "name": "unreach",
+  "name": "deadpath",
   "version": "0.1.0",
-  "description": "Dead-code scan for Codex. Stdio MCP: unreach mcp. Never delete files.",
+  "description": "Dead-code scan for Codex. Stdio MCP: deadpath mcp. Never delete files.",
   "author": "Vivek Singh"
 }

@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Research — Unreach</title>
-  <meta name="description" content="Developer and enterprise pain points behind dead-code detection, and the Unreach mechanism that answers each one.">
+  <title>Research — Deadpath</title>
+  <meta name="description" content="Developer and enterprise pain points behind dead-code detection, and the Deadpath mechanism that answers each one.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="index.html"><svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Unreach</a>
+      <a class="brand" href="index.html"><svg class="mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>Deadpath</a>
       <nav class="primary">
         <a href="install.html">Install</a>
         <a href="cli.html">CLI</a>
@@ -21,14 +21,14 @@
         <a href="memory.html">Memory</a>
         <a href="plugins.html">Plugins</a>
         <a href="research.html" aria-current="page">Research</a>
-        <a class="gh" href="https://github.com/wolfxops/unreach">GitHub</a>
+        <a class="gh" href="https://github.com/wolfxops/deadpath">GitHub</a>
       </nav>
     </div>
   </header>
 
   <main class="container page prose">
     <span class="eyebrow reveal">Research notes</span>
-    <h1 class="reveal d1">Why Unreach is built this way.</h1>
+    <h1 class="reveal d1">Why Deadpath is built this way.</h1>
     <p class="lead reveal d2">Use cases and pain points behind every feature, collected from the issue trackers and post-mortems of existing dead-code tools (knip, ts-prune, Vulture, deptry, unimport, unused-code linters in Go, Rust, Java, C#) and from agent-driven refactor failures. Each row maps a real complaint to the mechanism that answers it.</p>
 
     <h2>Who needs this</h2>
@@ -41,7 +41,7 @@
 
     <h2>Pain points and the mechanism that answers them</h2>
     <div class="table-wrap"><table>
-      <thead><tr><th style="width:48%">Pain point</th><th>Unreach mechanism</th></tr></thead>
+      <thead><tr><th style="width:48%">Pain point</th><th>Deadpath mechanism</th></tr></thead>
       <tbody>
         <tr>
           <td><strong>False positives from dynamic loading.</strong> <code>getattr</code>, <code>importlib</code>, reflection, DI containers, plugin registries and string-named modules. Engineers stop trusting the tool and disable it.</td>
@@ -57,15 +57,15 @@
         </tr>
         <tr>
           <td><strong>Auto-delete is dangerous.</strong> AST-based removal breaks contracts; agents confidently introduce bugs from a tool's false positive.</td>
-          <td>Design law: never delete. <code>unreach.plan</code> and <code>unreach.workflow</code> return ordered steps and require validation (compiler, type checker, tests) before a human-approved patch.</td>
+          <td>Design law: never delete. <code>deadpath.plan</code> and <code>deadpath.workflow</code> return ordered steps and require validation (compiler, type checker, tests) before a human-approved patch.</td>
         </tr>
         <tr>
           <td><strong>Legacy debt blocks adoption.</strong> Teams need a CI ratchet, not a red build on day one.</td>
-          <td><a href="memory.html">Memory</a> tracks first/last seen. <code>unreach scan --only-new</code> exits 1 only for new <code>block</code> findings.</td>
+          <td><a href="memory.html">Memory</a> tracks first/last seen. <code>deadpath scan --only-new</code> exits 1 only for new <code>block</code> findings.</td>
         </tr>
         <tr>
           <td><strong>Enterprise wants code-scanning integration and an audit trail.</strong></td>
-          <td><code>--format sarif</code> with confidence and signals in <code>properties</code>; decisions (<code>keep</code> / <code>false_positive</code> / <code>resolved</code>) with notes and timestamps in <code>.unreach/memory.json</code>.</td>
+          <td><code>--format sarif</code> with confidence and signals in <code>properties</code>; decisions (<code>keep</code> / <code>false_positive</code> / <code>resolved</code>) with notes and timestamps in <code>.deadpath/memory.json</code>.</td>
         </tr>
         <tr>
           <td><strong>Agents spend most tokens reading, not writing.</strong> Each session re-reads files, re-derives the same graph, and re-triages the same findings.</td>
@@ -85,7 +85,7 @@
         </tr>
         <tr>
           <td><strong>Agent output is a wall of prose</strong> the developer cannot scan during a review.</td>
-          <td>Plugins render GitHub-flavoured markdown tables (<code>unreach.judge</code> / <code>format: "table"</code>): severity, judged confidence, devil's advocate, next check, security, effort.</td>
+          <td>Plugins render GitHub-flavoured markdown tables (<code>deadpath.judge</code> / <code>format: "table"</code>): severity, judged confidence, devil's advocate, next check, security, effort.</td>
         </tr>
         <tr>
           <td><strong>Polyglot estates, single-language tools.</strong> Each service team runs a different scanner with a different output.</td>
@@ -98,7 +98,7 @@
       </tbody>
     </table></div>
 
-    <h2>What Unreach deliberately does not do (v0)</h2>
+    <h2>What Deadpath deliberately does not do (v0)</h2>
     <ul>
       <li>No auto-delete, no <code>--fix</code>.</li>
       <li>No SaaS, no telemetry, no cloud memory. Memory is a local JSON file you can commit or ignore.</li>
@@ -109,7 +109,7 @@
   <footer class="site-footer">
     <div class="container">
       <div>Apache-2.0 · Vivek Singh · <a href="https://x.com/wolfxops">wolfxops</a> · Pune</div>
-      <div class="house"><span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span><span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span><span class="tag brand"><strong>Unreach</strong>&nbsp;unused code in the editor</span></div>
+      <div class="house"><span class="tag"><strong>Cosen</strong>&nbsp;runtime cost</span><span class="tag"><strong>Quorum</strong>&nbsp;pre-merge review</span><span class="tag brand"><strong>Deadpath</strong>&nbsp;unused code in the editor</span></div>
     </div>
   </footer>
   <script src="assets/site.js" defer></script>

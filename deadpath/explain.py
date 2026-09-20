@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from unreach.llm import LLMUnavailable, available, chat
-from unreach.scan import Finding
+from deadpath.llm import LLMUnavailable, available, chat
+from deadpath.scan import Finding
 
 
 def explain(finding: Finding) -> str:
@@ -19,7 +19,7 @@ def explain(finding: Finding) -> str:
 
 def heuristic(finding: Finding) -> str:
     bits = [
-        f"Unreach classified `{finding.id}` as {finding.kind} ({finding.severity}, confidence {finding.confidence:.2f}).",
+        f"Deadpath classified `{finding.id}` as {finding.kind} ({finding.severity}, confidence {finding.confidence:.2f}).",
         finding.why,
     ]
     negatives = sorted((k, v) for k, v in finding.signals.items() if v < 0)
@@ -45,7 +45,7 @@ def heuristic(finding: Finding) -> str:
         bits.append(finding.critique["rationale"])
         if finding.critique.get("next_check"):
             bits.append("Next check: " + finding.critique["next_check"])
-    bits.append("Unreach never deletes files; use `unreach workflow` for the verification steps.")
+    bits.append("Deadpath never deletes files; use `deadpath workflow` for the verification steps.")
     return " ".join(bits)
 
 

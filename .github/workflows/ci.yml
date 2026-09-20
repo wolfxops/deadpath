@@ -23,7 +23,7 @@ jobs:
       - name: Mock scan
         run: |
           set +e
-          unreach scan fixtures/deadapp --mock
+          deadpath scan fixtures/deadapp --mock
           code=$?
           set -e
           test "$code" -eq 1

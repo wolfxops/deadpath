@@ -1,8 +1,8 @@
 """Stdio MCP server.
 
-Tools: unreach.scan, unreach.judge, unreach.explain, unreach.plan,
-unreach.workflow, unreach.triage, unreach.remember, unreach.memory,
-unreach.languages. One engine; the plugins only point here.
+Tools: deadpath.scan, deadpath.judge, deadpath.explain, deadpath.plan,
+deadpath.workflow, deadpath.triage, deadpath.remember, deadpath.memory,
+deadpath.languages. One engine; the plugins only point here.
 
 Every tool accepts ``format: "json" | "table"``. Tables are GitHub-flavoured
 markdown, which Claude Code, Cursor and Codex render natively — that is the
@@ -16,17 +16,17 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from unreach import __version__
-from unreach.confidence import DEFAULT_MIN_CONFIDENCE
-from unreach.explain import explain as explain_finding
-from unreach.memory import DECISIONS, Memory
-from unreach.mock import default_mock_root
-from unreach.plan import plan_payload
-from unreach.render import render_judge, render_plan_table, render_result_table, render_triage_table, render_workflow_table
-from unreach.scan import ScanResult, find_by_id, scan_repo, supported_languages
-from unreach.support import languages_payload
-from unreach.triage import triage
-from unreach.workflow import build_workflow
+from deadpath import __version__
+from deadpath.confidence import DEFAULT_MIN_CONFIDENCE
+from deadpath.explain import explain as explain_finding
+from deadpath.memory import DECISIONS, Memory
+from deadpath.mock import default_mock_root
+from deadpath.plan import plan_payload
+from deadpath.render import render_judge, render_plan_table, render_result_table, render_triage_table, render_workflow_table
+from deadpath.scan import ScanResult, find_by_id, scan_repo, supported_languages
+from deadpath.support import languages_payload
+from deadpath.triage import triage
+from deadpath.workflow import build_workflow
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -38,14 +38,14 @@ _PATH_PROPS = {
         "type": "number",
         "description": f"Drop findings below this confidence (default {DEFAULT_MIN_CONFIDENCE}).",
     },
-    "memory": {"type": "boolean", "description": "Use .unreach/memory.json (default true)."},
+    "memory": {"type": "boolean", "description": "Use .deadpath/memory.json (default true)."},
     "judge": {"type": "boolean", "description": "Run the judge/critic layer (default true). False = raw scan confidence."},
     "format": {"type": "string", "enum": ["json", "table"], "description": "json (default for scan/plan/workflow/triage) or a markdown table for humans."},
 }
 
 TOOLS = [
     {
-        "name": "unreach.scan",
+        "name": "deadpath.scan",
         "description": (
             "Deterministic dead-code scan with confidence scores (unused exports, orphan files, "
             "unused deps). No LLM. Never deletes files. By default returns a compact packet: full "
@@ -62,7 +62,7 @@ TOOLS = [
         },
     },
     {
-        "name": "unreach.judge",
+        "name": "deadpath.judge",
         "description": (
             "Judge/critic verdict per finding, as a markdown table by default. Prosecution = the scan's graph "
             "evidence; devil's advocate = 30+ named counter-hypotheses checked against real repository artifacts "
@@ -82,7 +82,7 @@ TOOLS = [
         },
     },
     {
-        "name": "unreach.explain",
+        "name": "deadpath.explain",
         "description": (
             "Explain one finding by id. Uses an OpenAI-compatible API only if a key is set; "
             "otherwise a heuristic paragraph."
@@ -94,12 +94,12 @@ TOOLS = [
         },
     },
     {
-        "name": "unreach.plan",
+        "name": "deadpath.plan",
         "description": "Ordered deletion/refactor suggestions ranked by confidence. Never writes files.",
         "inputSchema": {"type": "object", "properties": _PATH_PROPS},
     },
     {
-        "name": "unreach.workflow",
+        "name": "deadpath.workflow",
         "description": (
             "Language- and framework-aware agent workflow for the current findings: exact files to "
             "read, grep patterns, validation commands, and a remember step. Follow it instead of "
@@ -115,7 +115,7 @@ TOOLS = [
         },
     },
     {
-        "name": "unreach.triage",
+        "name": "deadpath.triage",
         "description": (
             "Budgeted second opinion on ambiguous (warn) findings. Sends compact evidence packets — never "
             "file contents — for at most max_items findings in one call, caches verdicts "
@@ -132,14 +132,14 @@ TOOLS = [
         },
     },
     {
-        "name": "unreach.languages",
+        "name": "deadpath.languages",
         "description": "Support matrix: languages, detection tier, graph precision, frameworks, validation commands.",
         "inputSchema": {"type": "object", "properties": {}},
     },
     {
-        "name": "unreach.remember",
+        "name": "deadpath.remember",
         "description": (
-            "Store a decision for a finding in .unreach/memory.json so future scans skip it: "
+            "Store a decision for a finding in .deadpath/memory.json so future scans skip it: "
             "keep (intentional), false_positive, or resolved."
         ),
         "inputSchema": {
@@ -154,7 +154,7 @@ TOOLS = [
         },
     },
     {
-        "name": "unreach.memory",
+        "name": "deadpath.memory",
         "description": "Summarize repository memory: runs, cached files, open findings, decisions.",
         "inputSchema": {
             "type": "object",
@@ -183,7 +183,7 @@ def handle_request(message: dict[str, Any], session: Session) -> dict[str, Any] 
             "result": {
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {"listChanged": False}},
-                "serverInfo": {"name": "unreach", "version": __version__},
+                "serverInfo": {"name": "deadpath", "version": __version__},
             },
         }
     if method in {"notifications/initialized", "initialized"}:
@@ -207,7 +207,7 @@ def handle_request(message: dict[str, Any], session: Session) -> dict[str, Any] 
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "result": {
-                    "content": [{"type": "text", "text": f"unreach error: {exc}"}],
+                    "content": [{"type": "text", "text": f"deadpath error: {exc}"}],
                     "isError": True,
                 },
             }
@@ -222,22 +222,22 @@ def handle_request(message: dict[str, Any], session: Session) -> dict[str, Any] 
 
 def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str:
     fmt = str(arguments.get("format") or "json")
-    if name == "unreach.scan":
+    if name == "deadpath.scan":
         result = _scan(arguments, session)
         only_new = bool(arguments.get("only_new", False))
         compact = not bool(arguments.get("full", False))
         if fmt == "table":
             return render_result_table(result, only_new=only_new)
         return json.dumps(result.to_dict(compact=compact, only_new=only_new), indent=2)
-    if name == "unreach.judge":
+    if name == "deadpath.judge":
         result = _scan(arguments, session)
         return render_judge(result, fmt=str(arguments.get("format") or "table"))
-    if name == "unreach.plan":
+    if name == "deadpath.plan":
         result = _scan(arguments, session)
         if fmt == "table":
             return render_plan_table(result.findings, path=result.path)
         return json.dumps(plan_payload(result.findings, path=result.path), indent=2)
-    if name == "unreach.workflow":
+    if name == "deadpath.workflow":
         result = _scan(arguments, session)
         verdicts = None
         if arguments.get("triage", True):
@@ -253,7 +253,7 @@ def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str
         if fmt == "table":
             return render_workflow_table(payload)
         return json.dumps(payload, indent=2)
-    if name == "unreach.triage":
+    if name == "deadpath.triage":
         result = _scan(arguments, session)
         root, _, _, _, memory = _scan_args(arguments)
         use_llm = None if arguments.get("llm", True) else False
@@ -266,9 +266,9 @@ def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str
         if fmt == "table":
             return render_triage_table(payload, result.findings)
         return json.dumps(payload, indent=2)
-    if name == "unreach.languages":
+    if name == "deadpath.languages":
         return json.dumps(languages_payload(), indent=2)
-    if name == "unreach.explain":
+    if name == "deadpath.explain":
         finding_id = arguments.get("id")
         if not finding_id:
             raise ValueError("id is required")
@@ -280,7 +280,7 @@ def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str
         if finding is None:
             raise ValueError(f"unknown finding id: {finding_id}")
         return explain_finding(finding)
-    if name == "unreach.remember":
+    if name == "deadpath.remember":
         finding_id = arguments.get("id")
         decision = arguments.get("decision")
         if not finding_id or not decision:
@@ -291,7 +291,7 @@ def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str
         mem.save()
         session.result = None
         return json.dumps({"id": finding_id, **entry, "memory": str(mem.path)}, indent=2)
-    if name == "unreach.memory":
+    if name == "deadpath.memory":
         root, _, _, _, _ = _scan_args(arguments)
         mem = Memory(root)
         if arguments.get("clear"):

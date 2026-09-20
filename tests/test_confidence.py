@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from unreach.confidence import BLOCK_AT, WARN_AT, Signals, score, severity_for
-from unreach.scan import scan_repo
+from deadpath.confidence import BLOCK_AT, WARN_AT, Signals, score, severity_for
+from deadpath.scan import scan_repo
 
 
 def _write(root: Path, rel: str, text: str) -> None:

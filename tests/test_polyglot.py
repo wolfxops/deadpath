@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from unreach.cli import main
-from unreach.langs import FRAMEWORKS
-from unreach.mcp_server import Session, handle_request
-from unreach.polyglot import LANGS
-from unreach.scan import scan_repo, supported_languages
-from unreach.support import languages_payload
+from deadpath.cli import main
+from deadpath.langs import FRAMEWORKS
+from deadpath.mcp_server import Session, handle_request
+from deadpath.polyglot import LANGS
+from deadpath.scan import scan_repo, supported_languages
+from deadpath.support import languages_payload
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "polyglot"
 
@@ -137,7 +137,7 @@ def test_cli_languages_and_workflow_for_go(isolated_memory, capsys):
 def test_mcp_languages_tool():
     session = Session()
     reply = handle_request(
-        {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "unreach.languages", "arguments": {}}},
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "deadpath.languages", "arguments": {}}},
         session,
     )
     payload = __import__("json").loads(reply["result"]["content"][0]["text"])

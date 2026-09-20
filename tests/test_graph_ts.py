@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from unreach.graph import build_typescript_graph, ts_imported_set
+from deadpath.graph import build_typescript_graph, ts_imported_set
 
 def test_typescript_orphan_and_unused_export(tmp_path: Path) -> None:
     (tmp_path / "used.ts").write_text("export function live(): number { return 1 }\n", encoding="utf-8")

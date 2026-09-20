@@ -10,11 +10,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from unreach import __version__, critic, graph, polyglot
-from unreach import confidence as conf
-from unreach.langs import PY_SUFFIXES, TS_SUFFIXES, Profile, detect_profile, file_role
-from unreach.memory import Delta, Memory
-from unreach.redact import SECRET_PATTERNS, redact_text  # noqa: F401 — re-exported for callers
+from deadpath import __version__, critic, graph, polyglot
+from deadpath import confidence as conf
+from deadpath.langs import PY_SUFFIXES, TS_SUFFIXES, Profile, detect_profile, file_role
+from deadpath.memory import Delta, Memory
+from deadpath.redact import SECRET_PATTERNS, redact_text  # noqa: F401 — re-exported for callers
 
 
 def supported_languages() -> list[str]:
@@ -29,7 +29,7 @@ SKIP_DIRS = {
     "env",
     "__pycache__",
     "node_modules",
-    ".unreach",
+    ".deadpath",
     ".pytest_cache",
     "dist",
     "build",
@@ -107,7 +107,7 @@ class ScanResult:
             # Repeat visit: the agent already saw the full profile; keep the essentials.
             profile = {k: profile[k] for k in ("languages", "primary", "frameworks", "monorepo")}
         payload: dict[str, Any] = {
-            "tool": "unreach",
+            "tool": "deadpath",
             "version": __version__,
             "path": self.path,
             "auto_delete": False,
@@ -230,7 +230,7 @@ def scan_repo(
         ctx = critic.build_context(root, profile, source_rels, artifacts=artifacts, parse_failures=profile.parse_failures)
         findings = critic.judge_findings(findings, ctx)
     if mock:
-        from unreach.mock import ensure_mock_findings
+        from deadpath.mock import ensure_mock_findings
 
         findings = ensure_mock_findings(root, findings)
 
@@ -620,7 +620,7 @@ def _scan_python_deps(root: Path, files: list[Path], profile: Profile, mem: Memo
         import_name = _dep_to_import_name(dep)
         if import_name in stdlib or import_name in imported_top or dep in imported_top:
             continue
-        if import_name in {"unreach", "setuptools", "wheel", "pip"}:
+        if import_name in {"deadpath", "setuptools", "wheel", "pip"}:
             continue
         signals = conf.dep_signals(
             dep=dep,
@@ -769,7 +769,7 @@ def _dedupe(findings: list[Finding]) -> list[Finding]:
 
 def findings_to_json(findings: list[Finding], *, path: str) -> str:
     payload = {
-        "tool": "unreach",
+        "tool": "deadpath",
         "version": __version__,
         "path": path,
         "auto_delete": False,
