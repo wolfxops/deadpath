@@ -12,6 +12,7 @@ from typing import Any
 
 from deadpath import __version__, critic, graph, polyglot
 from deadpath import confidence as conf
+from deadpath import deps as depmod
 from deadpath.langs import PY_SUFFIXES, TS_SUFFIXES, Profile, detect_profile, file_role
 from deadpath.memory import Delta, Memory
 from deadpath.redact import SECRET_PATTERNS, redact_text  # noqa: F401 — re-exported for callers
@@ -218,6 +219,8 @@ def scan_repo(
         findings.extend(_scan_typescript(root, ts_files, profile, mem))
     if other_files:
         findings.extend(_scan_polyglot(root, other_files, profile, mem))
+    if ts_files or other_files:
+        findings.extend(_scan_manifest_deps(root, ts_files, other_files, profile, mem))
 
     findings = [_redact_finding(f) for f in findings]
     findings = _dedupe(findings)
@@ -475,8 +478,8 @@ def _scan_typescript(root: Path, files: list[Path], profile: Profile, mem: Memor
                 continue
             signals = conf.export_signals(
                 symbol=export,
-                decorators=[],
-                bases=[],
+                decorators=module.decorated.get(export, []),
+                bases=module.bases.get(export, []),
                 framework_decorators=profile.decorators,
                 framework_bases=profile.bases,
                 used_locally=False,
@@ -503,6 +506,8 @@ def _scan_typescript(root: Path, files: list[Path], profile: Profile, mem: Memor
                     signals=signals.values,
                 )
             )
+        for name, lineno in module.privates.items():
+            findings.append(_unreachable_finding(rel, name, lineno, mem, extra_signals=[("ts_regex_graph", -0.05)]))
     return findings
 
 
@@ -544,6 +549,7 @@ def _scan_polyglot(root: Path, files: list[Path], profile: Profile, mem: Memory)
             if len(stem) >= 3 and export_index.used_elsewhere(pf.rel, stem):
                 signals.add("name_token_seen_elsewhere", -0.20)
             signals.add(*precision_signal)
+            _apply_framework_surface(signals, pf, profile)
             score = conf.score("orphan_file", signals)
             findings.append(
                 Finding(
@@ -564,39 +570,130 @@ def _scan_polyglot(root: Path, files: list[Path], profile: Profile, mem: Memory)
                 )
             )
             continue
-        if not spec.exports:
-            continue
-        for symbol in pf.exports:
-            if len(symbol) < 3 or symbol.lower() in {"main", "new", "init", "run", "setup", "index", "call", "self"}:
-                continue
-            if export_index.used_elsewhere(pf.rel, symbol):
-                continue
-            signals = conf.Signals()
-            signals.add("not_referenced_by_other_files", 0.0)
-            signals.add(f"{pf.lang}_token_match_heuristic", -0.30)
-            if _name_in(profile.config_tokens, symbol):
-                signals.add("symbol_named_in_config", -0.30)
-            signals.add("stable_across_runs", min(0.03, 0.01 * max(0, mem.seen_count(finding_id("unused_export", pf.rel, symbol)) - 1)))
-            score = conf.score("unused_export", signals)
-            findings.append(
-                Finding(
-                    id=finding_id("unused_export", pf.rel, symbol),
-                    kind="unused_export",
-                    severity=conf.severity_for(score),
-                    path=pf.rel,
+        if spec.exports:
+            for symbol in pf.exports:
+                if len(symbol) < 3 or symbol.lower() in {"main", "new", "init", "run", "setup", "index", "call", "self"}:
+                    continue
+                if export_index.used_elsewhere(pf.rel, symbol):
+                    continue
+                signals = conf.export_signals(
                     symbol=symbol,
-                    why=f"Public `{symbol}` in {pf.rel} is not referenced by any other {spec.name} file.",
-                    evidence=[f"{spec.name} export detection is token-based (heuristic)", *_signal_evidence(signals)],
-                    confidence=score,
-                    signals=signals.values,
+                    decorators=pf.decorated.get(symbol, []),
+                    bases=pf.bases.get(symbol, []),
+                    framework_decorators=profile.decorators,
+                    framework_bases=profile.bases,
+                    used_locally=False,
+                    whole_module_imported=False,
+                    name_in_strings=False,
+                    name_in_config=_name_in(profile.config_tokens, symbol),
+                    module_has_getattr=False,
+                    repo_dynamic_import=False,
+                    in_all=False,
+                    seen_count=mem.seen_count(finding_id("unused_export", pf.rel, symbol)),
                 )
-            )
+                signals.add(f"{pf.lang}_token_match_heuristic", -0.30)
+                if spec.precision == "name":
+                    signals.add(f"{pf.lang}_name_reference_graph", -0.10)
+                score = conf.score("unused_export", signals)
+                findings.append(
+                    Finding(
+                        id=finding_id("unused_export", pf.rel, symbol),
+                        kind="unused_export",
+                        severity=conf.severity_for(score),
+                        path=pf.rel,
+                        symbol=symbol,
+                        why=f"Public `{symbol}` in {pf.rel} is not referenced by any other {spec.name} file.",
+                        evidence=[f"{spec.name} export detection is token-based (heuristic)", *_signal_evidence(signals)],
+                        confidence=score,
+                        signals=signals.values,
+                    )
+                )
+        for name, lineno in pf.privates.items():
+            extra = [(f"{pf.lang}_token_match_heuristic", -0.15)]
+            if spec.precision == "name":
+                extra.append((f"{pf.lang}_name_reference_graph", -0.10))
+            findings.append(_unreachable_finding(pf.rel, name, lineno, mem, extra_signals=extra))
     return findings
 
 
 # --------------------------------------------------------------------------- #
 # Python dependencies
 # --------------------------------------------------------------------------- #
+
+
+def _scan_manifest_deps(
+    root: Path, ts_files: list[Path], other_files: list[Path], profile: Profile, mem: Memory
+) -> list[Finding]:
+    declared = depmod.declared_manifest_deps(root)
+    if not declared:
+        return []
+    imported = depmod.imported_names(root, ts_files, other_files)
+    findings: list[Finding] = []
+    for dep, source in declared:
+        if depmod.dep_is_used(dep, imported):
+            continue
+        signals = conf.dep_signals(
+            dep=dep,
+            name_in_config=_name_in(profile.config_tokens - {dep}, dep) or _bin_in_scripts(root, dep),
+            has_bin_usage=_bin_in_scripts(root, dep),
+            seen_count=mem.seen_count(finding_id("unused_dep", source, dep)),
+        )
+        score = conf.score("unused_dep", signals)
+        findings.append(
+            Finding(
+                id=finding_id("unused_dep", source, dep),
+                kind="unused_dep",
+                severity=conf.severity_for(score),
+                path=source,
+                symbol=dep,
+                why=f"Declared dependency `{dep}` is never imported under {root.name}.",
+                evidence=[
+                    "unused dependency detection is guessed, never a blocker on its own",
+                    *_signal_evidence(signals),
+                ],
+                confidence=score,
+                signals=signals.values,
+            )
+        )
+    return findings
+
+
+def _apply_framework_surface(signals: conf.Signals, pf: polyglot.PolyFile, profile: Profile) -> None:
+    names = {d for decs in pf.decorated.values() for d in decs}
+    bases = {b for items in pf.bases.values() for b in items}
+
+    def matches(name: str, candidates: set[str]) -> bool:
+        tail = name.split(".")[-1]
+        return name in candidates or tail in candidates
+
+    if any(matches(n, profile.decorators) for n in names):
+        signals.add("framework_registration_decorator", -0.60)
+    elif any(matches(b, profile.bases) for b in bases):
+        signals.add("framework_base_class", -0.35)
+
+
+def _unreachable_finding(
+    rel: str,
+    name: str,
+    lineno: int,
+    mem: Memory,
+    extra_signals: list[tuple[str, float]] | None = None,
+) -> Finding:
+    signals = conf.Signals()
+    for item in extra_signals or []:
+        signals.add(*item)
+    score = conf.score("unreachable", signals)
+    return Finding(
+        id=finding_id("unreachable", rel, name),
+        kind="unreachable",
+        severity=conf.severity_for(score),
+        path=rel,
+        symbol=name,
+        why=f"`{name}` in {rel} is never referenced in the scanned graph.",
+        evidence=[f"defined around line {lineno}", *_signal_evidence(signals)],
+        confidence=score,
+        signals=signals.values,
+    )
 
 
 def _scan_python_deps(root: Path, files: list[Path], profile: Profile, mem: Memory) -> list[Finding]:
