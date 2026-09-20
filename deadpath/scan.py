@@ -696,17 +696,22 @@ def _requirement_name(line: str) -> str | None:
 def _pyproject_deps(path: Path) -> list[str]:
     text = _read(path)
     names: list[str] = []
-    in_project = False
+    section = ""
     in_deps = False
     for raw in text.splitlines():
         stripped = raw.strip()
         if stripped.startswith("[") and stripped.endswith("]"):
-            in_project = stripped in {"[project]", "[project.optional-dependencies]"}
+            section = stripped
             in_deps = False
             continue
-        if not in_project:
+        if section not in {"[project]", "[project.optional-dependencies]"}:
             continue
-        if not in_deps and re.match(r"^[\w.-]+\s*=\s*\[", stripped):
+        key_match = re.match(r"^([\w.-]+)\s*=\s*\[", stripped)
+        is_dependency_key = bool(
+            key_match
+            and (section == "[project.optional-dependencies]" or key_match.group(1) == "dependencies")
+        )
+        if not in_deps and is_dependency_key:
             names.extend(_strings_in(stripped.split("=", 1)[1]))
             in_deps = not stripped.rstrip().endswith("]")
             continue
@@ -765,18 +770,6 @@ def _dedupe(findings: list[Finding]) -> list[Finding]:
         seen.add(finding.id)
         out.append(finding)
     return out
-
-
-def findings_to_json(findings: list[Finding], *, path: str) -> str:
-    payload = {
-        "tool": "deadpath",
-        "version": __version__,
-        "path": path,
-        "auto_delete": False,
-        "findings": [f.to_dict() for f in findings],
-        "counts": _counts(findings),
-    }
-    return json.dumps(payload, indent=2)
 
 
 def _counts(findings: list[Finding]) -> dict[str, int]:

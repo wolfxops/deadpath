@@ -40,10 +40,6 @@ def canned_findings() -> list[Finding]:
     ]
 
 
-def looks_like_deadapp(root: Path) -> bool:
-    return (root / "pkg" / "orphan.py").is_file() and (root / "pkg" / "exports.py").is_file()
-
-
 def default_mock_root() -> Path | None:
     here = Path(__file__).resolve().parents[1] / "fixtures" / "deadapp"
     cwd = Path.cwd() / "fixtures" / "deadapp"
