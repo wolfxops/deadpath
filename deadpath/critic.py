@@ -520,6 +520,10 @@ SCHEDULER_IN_FILE_RE = re.compile(
     r"|Sidekiq::Cron|sidekiq-cron|Sidekiq::Scheduler|whenever|every\s+\d+\.(?:minutes?|hours?|days?)|Quartz|JobBuilder|TriggerBuilder"
     r"|time\.NewTicker|cron\.New\(|robfig/cron|gocron|Hangfire|RecurringJob|IHostedService|BackgroundService|Timer\.periodic"
     r"|Task\.Delay|setInterval\(|@nestjs/schedule|Bull\.|BullMQ|Agenda\(|node-schedule|Oban\.|Quantum\.|:crontab|DispatchQueue\.main\.asyncAfter"
+    r"|@workflow\b|@activity\b|@dag\b|\bDAG\(|prefect\.flow|@flow\b|@asset\b|dagster\.|airflow\.decorators"
+)
+ORCHESTRATION_LINE_RE = re.compile(
+    r"(?i)\b(?:temporal|cadence|prefect|dagster|airflow|workflowId|workflow_id|taskQueue|task_queue|dag_id|@workflow|@activity)\b"
 )
 CLI_ARGS_IN_FILE_RE = re.compile(
     r"argparse|ArgumentParser|\bclick\.|@click|typer\.|sys\.argv|docopt|fire\.Fire|flag\.Parse\(|os\.Args|process\.argv|commander|yargs|meow\b|oclif"
@@ -644,6 +648,14 @@ def _chk_scheduled_job(f: "Finding", ctx: Context, n: Needles) -> list[Evidence]
     if hits:
         return hits
     return ctx.artifacts.locate(n.all, categories={"ci", "container", "config", "infra", "serverless", "script"}, line_filter=SCHEDULE_LINE_RE)
+
+
+def _chk_orchestration(f: "Finding", ctx: Context, n: Needles) -> list[Evidence]:
+    return ctx.artifacts.locate(
+        n.all,
+        categories={"scheduler", "ci", "infra", "config", "serverless", "script"},
+        line_filter=ORCHESTRATION_LINE_RE,
+    )
 
 
 def _chk_scheduler_registration(f: "Finding", ctx: Context, n: Needles) -> list[Evidence]:
@@ -862,6 +874,9 @@ HYPOTHESES: list[Hypothesis] = [
     Hypothesis("scheduled_job", "strong", 0.50, CODE_KINDS,
                "Named in a scheduler artifact (crontab, celery beat, k8s CronJob, workflow `schedule:`, systemd timer).",
                "Open {where}. If the schedule is active in production this is a live job: remember `keep`. If the schedule is disabled, remove the schedule entry and the code in the same patch.", _chk_scheduled_job),
+    Hypothesis("orchestration_workflow", "strong", 0.50, CODE_KINDS,
+               "Named by a workflow orchestrator (Temporal/Cadence, Prefect, Dagster, Airflow DAG) that invokes by id, not by import.",
+               "Open {where}. If that workflow/task is still registered, remember `keep`; if it is retired, remove the registration and the code in the same patch.", _chk_orchestration),
     Hypothesis("container_or_process_entry", "strong", 0.50, CODE_KINDS,
                "Named by a Dockerfile CMD/ENTRYPOINT, Procfile, compose/k8s command, or a systemd/supervisor unit.",
                "Open {where} and confirm whether that process definition is still deployed.", _chk_container_entry),
@@ -1193,7 +1208,7 @@ def critique(finding: "Finding", ctx: Context) -> Critique:
 
 
 ARTIFACT_HYPOTHESES = {
-    "scheduled_job", "container_or_process_entry", "serverless_handler", "cli_entry_point",
+    "scheduled_job", "orchestration_workflow", "container_or_process_entry", "serverless_handler", "cli_entry_point",
     "plugin_or_entry_point_group", "ci_or_build_invocation", "infrastructure_manifest", "ide_or_runner_config",
 }
 CONFIG_SIGNALS = {"module_named_in_config", "symbol_named_in_config", "dependency_named_in_config_or_scripts", "cli_binary_use"}

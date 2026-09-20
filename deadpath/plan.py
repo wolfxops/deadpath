@@ -1,4 +1,8 @@
-"""Ordered cleanup plan. Never writes or deletes files."""
+"""Ordered cleanup plan. Never writes or deletes files.
+
+Judge ``keep`` findings are omitted: a live path already has ``file:line``
+evidence, and listing them as delete steps is how agents undo the judge.
+"""
 
 from __future__ import annotations
 
@@ -31,16 +35,20 @@ class PlanStep:
     finding_id: str
     severity: str
     confidence: float = 0.0
+    judge: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
+def _rank_key(finding: Finding) -> tuple:
+    verdict = finding.verdict
+    band = 0 if verdict == "remove" or finding.severity == "block" else 1 if verdict == "verify" or finding.severity == "warn" else 2
+    return (band, KIND_ORDER.get(finding.kind, 9), -finding.confidence, finding.path, finding.symbol or "")
+
+
 def build_plan(findings: list[Finding]) -> list[PlanStep]:
-    ranked = sorted(
-        findings,
-        key=lambda f: (KIND_ORDER.get(f.kind, 9), -f.confidence, f.path, f.symbol or ""),
-    )
+    ranked = sorted((f for f in findings if f.verdict != "keep"), key=_rank_key)
     steps: list[PlanStep] = []
     for index, finding in enumerate(ranked, start=1):
         action = ACTION_FOR_KIND.get(finding.kind, "review")
@@ -58,7 +66,7 @@ def build_plan(findings: list[Finding]) -> list[PlanStep]:
             reason = f"Consider dropping `{finding.symbol}` from `{finding.path}`. {finding.why}"
         else:
             reason = finding.why
-        if finding.severity != "block":
+        if finding.verdict == "verify" or finding.severity != "block":
             reason += f" Confidence {finding.confidence:.2f}: verify before acting."
         steps.append(
             PlanStep(
@@ -70,19 +78,31 @@ def build_plan(findings: list[Finding]) -> list[PlanStep]:
                 finding_id=finding.id,
                 severity=finding.severity,
                 confidence=finding.confidence,
+                judge=finding.verdict,
             )
         )
     return steps
 
 
 def plan_payload(findings: list[Finding], *, path: str) -> dict:
+    skipped = [f for f in findings if f.verdict == "keep"]
     steps = build_plan(findings)
+    summary = "Ordered suggestions only. Deadpath does not delete files or apply patches."
+    if skipped:
+        summary += f" {len(skipped)} finding(s) omitted: the judge found a live path (keep)."
     return {
         "tool": "deadpath",
         "auto_delete": False,
         "path": path,
-        "summary": (
-            "Ordered suggestions only. Deadpath does not delete files or apply patches."
-        ),
+        "summary": summary,
+        "skipped_keep": [
+            {
+                "id": f.id,
+                "path": f.path,
+                "symbol": f.symbol,
+                "next_check": (f.critique or {}).get("next_check"),
+            }
+            for f in skipped
+        ],
         "steps": [step.to_dict() for step in steps],
     }

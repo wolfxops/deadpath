@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from deadpath.plan import build_plan, plan_payload
-from deadpath.scan import scan_path
+from deadpath.scan import scan_path, scan_repo
 
 DEADAPP = Path(__file__).resolve().parents[1] / "fixtures" / "deadapp"
 
@@ -31,3 +31,13 @@ def test_plan_never_includes_write_action() -> None:
     for step in build_plan(findings):
         assert step.action != "delete"
         assert "write" not in step.action
+
+
+def test_plan_omits_judge_keep() -> None:
+    result = scan_repo(DEADAPP, mock=True, memory=False)
+    payload = plan_payload(result.findings, path=str(DEADAPP))
+    ids = {step["finding_id"] for step in payload["steps"]}
+    assert "orphan_file:pkg/nightly.py" not in ids
+    assert any(s["id"] == "orphan_file:pkg/nightly.py" for s in payload["skipped_keep"])
+    assert "keep" in payload["summary"]
+    assert any(step["finding_id"] == "orphan_file:pkg/orphan.py" for step in payload["steps"])

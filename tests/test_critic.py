@@ -87,6 +87,7 @@ def test_secret_like_literal_is_reported_by_line_only(tmp_path: Path) -> None:
         (".github/workflows/nightly.yml", "on:\n  schedule:\n    - cron: '0 2 * * *'\njobs:\n  run:\n    steps:\n      - run: python -m app.worker\n", "scheduled_job"),
         ("Makefile", "worker:\n\tpython -m app.worker\n", "ci_or_build_invocation"),
         ("k8s/cron.yaml", "apiVersion: batch/v1\nkind: CronJob\nspec:\n  schedule: '0 2 * * *'\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          containers:\n            - command: ['python', '-m', 'app.worker']\n", "scheduled_job"),
+        ("workflows/temporal.yaml", "workflowId: app.worker\ntaskQueue: billing\n", "orchestration_workflow"),
         ("infra/main.tf", 'resource "aws_lambda_function" "w" {\n  handler = "app/worker.handler"\n}\n', "infrastructure_manifest"),
         (".vscode/launch.json", '{"configurations": [{"program": "${workspaceFolder}/app/worker.py"}]}\n', "ide_or_runner_config"),
         ("templates/index.html", "<button onclick=\"worker()\">{% load worker %}</button>\n", "template_reference"),
@@ -267,7 +268,7 @@ def test_table_format_everywhere(capsys) -> None:
     for cmd in (["scan"], ["plan"], ["workflow", "--no-triage"], ["triage", "--no-llm"]):
         main([cmd[0], str(DEADAPP), "--no-memory", "--format", "table", *cmd[1:]])
         out = capsys.readouterr().out
-        assert out.count("|---|") >= 1 or "No warn findings" in out, cmd
+        assert out.count("|---|") >= 1 or "No findings for counsel" in out or "No warn findings" in out, cmd
     session = Session()
     for tool in ("deadpath.scan", "deadpath.plan", "deadpath.workflow", "deadpath.triage"):
         reply = handle_request(
@@ -275,7 +276,7 @@ def test_table_format_everywhere(capsys) -> None:
             session,
         )
         text = reply["result"]["content"][0]["text"]
-        assert "|---|" in text or "No warn findings" in text, tool
+        assert "|---|" in text or "No findings for counsel" in text or "No warn findings" in text, tool
 
 
 def test_workflow_uses_judge_next_check_and_skips_keep() -> None:
@@ -315,5 +316,8 @@ def test_triage_heuristic_and_packet_carry_judge(isolated_memory, tmp_path, monk
     monkeypatch.setattr(tri, "chat", fake_chat)
     out = tri.triage(result.findings, Memory(tmp_path))
     assert "devil's advocate" in sent[0][0]["content"]
+    sent_ids = {i["id"] for i in json.loads(sent[0][1]["content"])["items"]}
+    assert "orphan_file:pkg/orphan.py" in sent_ids  # remove candidates are counselled
+    assert "orphan_file:pkg/nightly.py" not in sent_ids  # keep is not
     entry = out["verdicts"]["unused_export:pkg/hooks.py:maybe_dead"]
     assert entry["counter"] == "could be a template tag"

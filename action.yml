@@ -14,13 +14,21 @@ inputs:
     required: false
     default: "false"
   format:
-    description: Output format (json or md)
+    description: Output format (json, md, sarif, or table)
     required: false
     default: json
   lang:
-    description: Language filter (auto, py, ts)
+    description: Language filter (auto, or a language id such as py, ts, go, rs, java)
     required: false
     default: auto
+  only_new:
+    description: Fail only on new block findings (CI ratchet against .deadpath/memory.json)
+    required: false
+    default: "false"
+  output:
+    description: Optional path to write scan output (e.g. deadpath.sarif for code scanning)
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -36,4 +44,9 @@ runs:
       run: |
         extra=()
         if [ "${{ inputs.mock }}" = "true" ]; then extra+=(--mock); fi
-        deadpath scan "${{ inputs.path }}" --format "${{ inputs.format }}" --lang "${{ inputs.lang }}" "${extra[@]}"
+        if [ "${{ inputs.only_new }}" = "true" ]; then extra+=(--only-new); fi
+        if [ -n "${{ inputs.output }}" ]; then
+          deadpath scan "${{ inputs.path }}" --format "${{ inputs.format }}" --lang "${{ inputs.lang }}" "${extra[@]}" > "${{ inputs.output }}"
+        else
+          deadpath scan "${{ inputs.path }}" --format "${{ inputs.format }}" --lang "${{ inputs.lang }}" "${extra[@]}"
+        fi

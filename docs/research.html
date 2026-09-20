@@ -93,7 +93,7 @@
         </tr>
         <tr>
           <td><strong>Tools need network, SDKs, or a model to work at all.</strong></td>
-          <td>Detection is offline and deterministic. The LLM is used only for <code>explain</code> and <code>triage</code>, over plain OpenAI-compatible HTTP, and only if a key is set. Every workflow has an identical offline path.</td>
+          <td>Detection is offline and deterministic. The LLM is optional veto-only counsel on <code>remove</code> then <code>verify</code> packets (never file bodies), over plain OpenAI-compatible HTTP, and only if a key is set. Every workflow has an identical offline path.</td>
         </tr>
       </tbody>
     </table></div>
@@ -102,6 +102,7 @@
     <ul>
       <li>No auto-delete, no <code>--fix</code>.</li>
       <li>No SaaS, no telemetry, no cloud memory. Memory is a local JSON file you can commit or ignore.</li>
+      <li>No LLM in the graph or the judge. The model is optional veto-only counsel on evidence packets; it cannot strengthen a <code>verify</code> into a deletion.</li>
       <li>No pretending. Python is first-class; TypeScript/JavaScript is an import graph; the other fourteen languages are file-level reference graphs with declared precision and capped confidence. Symbol-level analysis for compiled languages belongs to their compilers and is invoked as a validation step, not re-implemented.</li>
     </ul>
   </main>

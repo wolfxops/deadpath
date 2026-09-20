@@ -150,8 +150,11 @@ def build_workflow(
             "delete_requires": "explicit user approval after validation steps pass",
         },
         "llm": {
-            "policy": "model sees only warn findings, once, as compact evidence packets; verdicts are cached by evidence digest",
-            **llm_stats,
+            "policy": (
+                llm_stats.get("policy")
+                or "model is a veto-only counsel on judge remove (first) and verify/warn packets; keep and note never sent; cached by evidence digest"
+            ),
+            **{k: v for k, v in llm_stats.items() if k != "policy"},
         },
         "selected_findings": [f.id for f in selected],
         "kept_by_triage": kept,

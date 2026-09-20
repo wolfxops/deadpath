@@ -1,21 +1,21 @@
-"""Budgeted LLM triage.
+"""Grounded LLM counsel (stage four).
 
-The scanner is deterministic; the model is used only where it adds value:
-ranking and second-opinion on *ambiguous* (``warn``) findings. Policy:
+Detection — graph, confidence, judge — never calls a model. CI, air-gapped
+installs, and code review must see the same verdict without a key.
 
-* ``block`` findings are never sent (the evidence already suffices).
-* ``note`` findings are never sent (too weak to be worth tokens).
-* ``warn`` findings are sent **once**, in **one batched call**, as compact
-  evidence packets (id, kind, path, symbol, signals, why) — never file bodies.
-* Verdicts are cached in memory keyed by a digest of the evidence, so an
-  unchanged finding is never asked about again.
-* Without a key the same interface returns deterministic heuristic verdicts,
-  so workflows behave identically offline.
-* The judge layer (``deadpath.critic``) runs first and deterministically. Its
-  verdict, sustained objections and identification caveats travel in the packet,
-  and the model is asked to act as a *second* devil's advocate: name the
-  strongest reason the code could still be live that the judge missed, then
-  decide.
+The model is used only where it can add a *veto*, not a guess:
+
+* Judge ``remove`` findings go first. Skipping ``block`` was the wrong safety
+  story: those are the deletions that hurt if a regex judge missed a live path
+  (Temporal workflow, custom scheduler, house-style entry).
+* Judge ``verify`` / scan ``warn`` findings go next (ambiguous evidence).
+* ``keep`` is never sent (already settled with ``file:line`` evidence).
+* ``note`` is never sent (too weak; a model would confabulate).
+* The model cannot *strengthen*: it may confirm ``remove``, escalate to
+  ``verify``, or overturn to ``keep``. It cannot turn ``verify`` into
+  ``likely_dead``.
+* Packets never include file bodies. Verdicts are cached by evidence digest.
+* Without a key the same interface returns deterministic heuristic verdicts.
 
 Verdicts: ``likely_dead`` | ``verify`` | ``keep``.
 """
@@ -47,18 +47,57 @@ SOFT_NEGATIVE = {
     "decorated_unknown",
     "module_imported_whole_attribute_access_possible",
 }
+POLICY = (
+    "model is a veto-only counsel on judge remove (first) and verify/warn packets; "
+    "cannot strengthen verify to likely_dead; keep and note are never sent; "
+    "verdicts cached by evidence digest; never file bodies"
+)
 
 
 def evidence_digest(finding: Finding) -> str:
     raw = json.dumps(
-        {"id": finding.id, "path": finding.path, "symbol": finding.symbol, "signals": finding.signals, "confidence": finding.confidence},
+        {
+            "id": finding.id,
+            "path": finding.path,
+            "symbol": finding.symbol,
+            "signals": finding.signals,
+            "confidence": finding.confidence,
+            "verdict": finding.verdict,
+        },
         sort_keys=True,
     )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
+def counsel_role(finding: Finding) -> str | None:
+    """``remove`` | ``verify`` if the model/heuristic should see this finding, else None."""
+    verdict = finding.verdict
+    if verdict == "keep":
+        return None
+    if finding.severity == "note" and verdict != "remove":
+        return None
+    if verdict == "remove" or (verdict is None and finding.severity == "block"):
+        return "remove"
+    if verdict == "verify" or finding.severity == "warn":
+        return "verify"
+    return None
+
+
+def clamp_llm_verdict(finding: Finding, llm_verdict: str) -> str:
+    """The model may only confirm, escalate, or overturn — never upgrade risk."""
+    if llm_verdict not in VERDICTS:
+        llm_verdict, _ = heuristic_verdict(finding)
+    if llm_verdict == "keep":
+        return "keep"
+    if llm_verdict == "verify":
+        return "verify"
+    if counsel_role(finding) == "verify" or finding.verdict == "verify":
+        return "verify"
+    return "likely_dead"
+
+
 def judge_brief(finding: Finding) -> dict[str, Any] | None:
-    """Compact judge summary for the model: verdict plus where the defense found evidence."""
+    """Compact judge summary: verdict, next check, what held, what was already ruled out."""
     critique = finding.critique
     if not critique:
         return None
@@ -68,14 +107,32 @@ def judge_brief(finding: Finding) -> dict[str, Any] | None:
         if o.get("penalty", 0) > 0
     ][:4]
     caveats = [o["hypothesis"] for o in critique.get("identification", []) if o.get("penalty", 0) > 0][:3]
-    brief: dict[str, Any] = {"verdict": critique["verdict"], "checked": critique.get("hypotheses_checked", 0)}
+    brief: dict[str, Any] = {
+        "verdict": critique["verdict"],
+        "checked": critique.get("hypotheses_checked", 0),
+        "next_check": critique.get("next_check"),
+    }
     if objections:
         brief["objections"] = objections
     if caveats:
         brief["caveats"] = caveats
+    ruled_out = _ruled_out(finding)
+    if ruled_out:
+        brief["ruled_out"] = ruled_out
     if critique.get("security", {}).get("markers"):
         brief["security"] = [m["marker"] for m in critique["security"]["markers"][:3]]
     return brief
+
+
+def _ruled_out(finding: Finding) -> list[str]:
+    critique = finding.critique or {}
+    held = {o["hypothesis"] for o in critique.get("objections", []) if o.get("penalty", 0) > 0}
+    try:
+        from deadpath.critic import HYPOTHESES
+    except ImportError:
+        return []
+    names = [h.name for h in HYPOTHESES if finding.kind in h.kinds and h.name not in held]
+    return names[:16]
 
 
 def packet(finding: Finding) -> dict[str, Any]:
@@ -87,6 +144,7 @@ def packet(finding: Finding) -> dict[str, Any]:
         "confidence": finding.confidence,
         "signals": finding.signals,
         "why": finding.why,
+        "role": counsel_role(finding),
     }
     brief = judge_brief(finding)
     if brief:
@@ -131,21 +189,29 @@ def triage(
         "asked": 0,
         "cached": 0,
         "heuristic": 0,
-        "skipped_block": 0,
+        "skipped_keep": 0,
         "skipped_note": 0,
+        "reviewed_remove": 0,
+        "reviewed_verify": 0,
         "deferred": 0,
         "prompt_tokens_estimate": 0,
         "model": None,
+        "policy": POLICY,
     }
 
     to_ask: list[Finding] = []
     for finding in findings:
-        if finding.severity == "block":
-            stats["skipped_block"] += 1
+        role = counsel_role(finding)
+        if role is None:
+            if finding.verdict == "keep":
+                stats["skipped_keep"] += 1
+            else:
+                stats["skipped_note"] += 1
             continue
-        if finding.severity == "note":
-            stats["skipped_note"] += 1
-            continue
+        if role == "remove":
+            stats["reviewed_remove"] += 1
+        else:
+            stats["reviewed_verify"] += 1
         digest = evidence_digest(finding)
         cached = store.get(finding.id)
         if cached and cached.get("digest") == digest and (cached.get("model") != "heuristic" or not llm_ok):
@@ -153,6 +219,8 @@ def triage(
             stats["cached"] += 1
             continue
         to_ask.append(finding)
+
+    to_ask.sort(key=lambda f: (0 if counsel_role(f) == "remove" else 1, -f.confidence, f.id))
 
     if llm_ok and to_ask:
         batch = to_ask[:max_items]
@@ -165,16 +233,19 @@ def triage(
             stats["prompt_tokens_estimate"] = usage.get("prompt_tokens") or estimate_tokens(json.dumps([packet(f) for f in batch]))
             for finding in batch:
                 answer = answers.get(finding.id) or {}
-                verdict = answer.get("verdict") if answer.get("verdict") in VERDICTS else None
-                if verdict is None:
+                raw = answer.get("verdict") if answer.get("verdict") in VERDICTS else None
+                if raw is None:
                     verdict, reason = heuristic_verdict(finding)
                     model = "heuristic"
                 else:
+                    verdict = clamp_llm_verdict(finding, raw)
                     reason = str(answer.get("reason", ""))[:300]
                     model = str(usage.get("model") or "llm")
                 entry = _entry(finding, verdict, reason, model)
                 if answer.get("counter"):
                     entry["counter"] = str(answer["counter"])[:200]
+                if verdict != raw and raw in VERDICTS:
+                    entry["clamped_from"] = raw
                 store[finding.id] = entry
                 verdicts[finding.id] = entry
             to_ask = to_ask[len(batch):]
@@ -201,14 +272,17 @@ def _entry(finding: Finding, verdict: str, reason: str, model: str) -> dict[str,
 
 def _ask(batch: list[Finding]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     system = (
-        "You are the second reviewer of static dead-code findings. A deterministic judge already checked "
-        "named counter-hypotheses (scheduled jobs, CLI/container/serverless entry points, CI scripts, reflection, "
-        "templates, plugin registries, feature flags, platform guards, generated code, public library surface) and "
-        "reports its verdict and evidence under `judge`. For each item, first play devil's advocate: name the single "
-        "strongest reason the code could still be live that the judge could have missed (be concrete: which mechanism, "
-        "which file to look in). Then decide one verdict: likely_dead (safe to propose removal after tests), verify "
-        "(a targeted check is needed first), or keep (probably reachable). Use only the given signals and judge notes; "
-        "you cannot see the code. Never recommend deleting anything automatically. Respond with JSON: "
+        "You are counsel for the defense — a second devil's advocate — on static dead-code findings. A deterministic judge already "
+        "checked named counter-hypotheses (schedulers, CLI/container/serverless entries, CI, reflection, "
+        "templates, plugin registries, feature flags, platform guards, generated code, orchestration, "
+        "public library surface) and reports verdict, next_check, sustained objections, and ruled_out "
+        "under `judge`. You cannot see source. You may not invent files. "
+        "Your job is to SAVE live code the judge might have missed, not to rubber-stamp deletions. "
+        "For each item: name the single strongest remaining live-path (mechanism + where to look), then "
+        "decide likely_dead (confirm removal after tests), verify (one check first), or keep (probably live). "
+        "Items with role=remove are about to be proposed for deletion — bias toward verify/keep if any "
+        "plausible live path remains. Never upgrade a verify item to likely_dead. Never recommend automatic "
+        "deletion. Respond with JSON: "
         '{"verdicts": {"<id>": {"counter": "<= 15 words", "verdict": "...", "reason": "<= 20 words"}}}'
     )
     text, usage = chat(

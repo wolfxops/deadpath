@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Deadpath — find the code your agents keep rewriting around</title>
-  <meta name="description" content="Deterministic dead-code detection for 16 languages and 45 frameworks, with confidence scores, guided agent workflows, budgeted LLM triage, and long-term memory. Works in Claude Code, Cursor, and Codex.">
+  <meta name="description" content="Deterministic dead-code detection for 16 languages and 45 frameworks, with confidence scores, a judge/devil's advocate, veto-only LLM counsel, guided agent workflows, and long-term memory. Works in Claude Code, Cursor, and Codex.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -152,7 +152,7 @@
       <div class="container">
         <div class="section-head reveal">
           <span class="eyebrow">How it works</span>
-          <h2>One engine, five stages. The model only enters at stage four — and only for what is still ambiguous.</h2>
+          <h2>One engine, five stages. The model never detects. It only counsels — and only as a veto.</h2>
         </div>
         <div class="pipeline cols-5">
           <div class="node reveal">
@@ -165,19 +165,19 @@
             <div class="bubble">2</div>
             <h3>Confidence score</h3>
             <p>Named signals — decorators, base classes, string references, config mentions, dynamic imports — adjust a base score.</p>
-            <span class="tag block">block ≥ 0.85</span>
+            <span class="tag">no LLM</span>
           </div>
           <div class="node reveal d2">
             <div class="bubble">3</div>
             <h3>Judge</h3>
-            <p>Devil's advocate checks schedulers, entry points, flags, reflection. Identification + security lens. Verdict: remove / verify / keep.</p>
+            <p>Devil's advocate checks schedulers, orchestrators, entry points, flags, reflection. Identification + security lens. Verdict: remove / verify / keep.</p>
             <span class="tag">no LLM</span>
           </div>
           <div class="node reveal d3">
             <div class="bubble">4</div>
-            <h3>Triage + workflow</h3>
-            <p>Warn findings go to the model once, batched, as evidence packets. The agent gets exact files, greps and validation commands.</p>
-            <span class="tag brand">budgeted LLM</span>
+            <h3>Counsel + workflow</h3>
+            <p>Optional model reviews <code>remove</code> first, then <code>verify</code>, as evidence packets. Veto only: confirm, escalate, or overturn — never strengthen. Then exact files, greps, validate.</p>
+            <span class="tag brand">veto-only LLM</span>
           </div>
           <div class="node reveal d4">
             <div class="bubble">5</div>
@@ -265,7 +265,7 @@
           <h2>The agent gets a checklist, not a codebase.</h2>
           <p class="lead"><code>deadpath.workflow</code> emits verify → edit → validate → remember steps shaped by the detected stack: grep this symbol, read these 40 lines, run <code>go test ./...</code> or <code>pytest -q</code> or <code>dotnet build</code>, then record the decision.</p>
           <ul>
-            <li><strong>Optimal LLM use.</strong> <code>block</code> findings are never sent to a model (the evidence suffices); <code>note</code> findings are never sent (too weak). <code>warn</code> findings go once, batched, as compact packets — never file bodies.</li>
+            <li><strong>Veto-only counsel.</strong> Graph and judge never call a model. Stage four reviews judge <code>remove</code> first (the deletions that hurt if a live path was missed), then <code>verify</code>. Keep and note stay offline. The model cannot strengthen a verdict.</li>
             <li><strong>Cached verdicts.</strong> Each verdict is stored by evidence digest; an unchanged finding is never asked about twice.</li>
             <li><strong>Works offline.</strong> Without a key the same workflow runs on deterministic heuristics.</li>
           </ul>
@@ -276,14 +276,14 @@
             <text x="20" y="28" font-size="13" font-weight="700" fill="#0f172a">Which findings reach the model?</text>
             <g>
               <rect x="20" y="52" width="150" height="64" rx="12" fill="#ffe4e6" stroke="#fecdd3"/>
-              <text x="95" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#e11d48">block</text>
-              <text x="95" y="98" text-anchor="middle" font-size="11" fill="#9f1239">certain · skip model</text>
+              <text x="95" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#e11d48">remove</text>
+              <text x="95" y="98" text-anchor="middle" font-size="11" fill="#9f1239">counsel first · veto only</text>
               <rect x="185" y="52" width="150" height="64" rx="12" fill="#fef3c7" stroke="#fde68a"/>
-              <text x="260" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">warn</text>
-              <text x="260" y="98" text-anchor="middle" font-size="11" fill="#92400e">ambiguous · triage once</text>
+              <text x="260" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">verify</text>
+              <text x="260" y="98" text-anchor="middle" font-size="11" fill="#92400e">ambiguous · counsel once</text>
               <rect x="350" y="52" width="150" height="64" rx="12" fill="#e2e8f0" stroke="#cbd5e1"/>
-              <text x="425" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">note</text>
-              <text x="425" y="98" text-anchor="middle" font-size="11" fill="#475569">weak · skip model</text>
+              <text x="425" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">keep / note</text>
+              <text x="425" y="98" text-anchor="middle" font-size="11" fill="#475569">settled or weak · skip</text>
             </g>
             <path class="flow" d="M260,116 L260,160" stroke="#2447f9" stroke-width="2.5" fill="none" marker-end="url(#arrow2)"/>
             <defs><marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2447f9"/></marker></defs>

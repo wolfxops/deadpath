@@ -43,12 +43,12 @@
           <path class="flow" d="M170,154 C230,154 240,100 290,100" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#a3)"/>
           <rect x="294" y="66" width="150" height="68" rx="14" fill="#2447f9"/>
           <text x="369" y="95" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">deadpath mcp</text>
-          <text x="369" y="114" text-anchor="middle" font-size="11" fill="#c7d2fe">stdio · JSON-RPC · 8 tools</text>
+          <text x="369" y="114" text-anchor="middle" font-size="11" fill="#c7d2fe">stdio · JSON-RPC · 9 tools</text>
           <path class="flow" d="M444,100 L500,100" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#a3)"/>
           <rect x="504" y="24" width="196" height="152" rx="14" fill="#f1f4f9" stroke="#e2e8f0"/>
           <text x="602" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">one engine</text>
-          <text x="602" y="76" text-anchor="middle" font-size="11.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">scan · confidence</text>
-          <text x="602" y="96" text-anchor="middle" font-size="11.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">workflow · triage</text>
+          <text x="602" y="76" text-anchor="middle" font-size="11.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">scan · judge</text>
+          <text x="602" y="96" text-anchor="middle" font-size="11.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">workflow · counsel</text>
           <text x="602" y="116" text-anchor="middle" font-size="11.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">plan · explain</text>
           <text x="602" y="136" text-anchor="middle" font-size="11.5" fill="#475569" font-family="ui-monospace, Menlo, monospace">remember · memory</text>
           <text x="602" y="158" text-anchor="middle" font-size="11" fill="#64748b">.deadpath/memory.json</text>
@@ -88,9 +88,9 @@ args = ["mcp"]</code></pre>
         <tr><td><code>deadpath.scan</code></td><td><code>{ path?, lang?, only_new?, full?, min_confidence?, memory?, judge?, format? }</code></td><td>Findings with confidence; compact JSON by default. Pass <code>format: "table"</code> for the plugin-facing markdown table.</td></tr>
         <tr><td><code>deadpath.judge</code></td><td><code>{ path?, format? }</code></td><td><strong>Table by default.</strong> Prosecution vs devil's advocate, identification, security, effort, next check. Verdicts <code>remove</code> / <code>verify</code> / <code>keep</code>. Deterministic, no LLM.</td></tr>
         <tr><td><code>deadpath.workflow</code></td><td><code>{ path?, max_findings?, triage?, format? }</code></td><td>Language- and framework-aware verify / edit / validate / remember steps. <code>kept_by_judge</code> skipped; <code>security_first</code> first; first verify step is the judge's next check.</td></tr>
-        <tr><td><code>deadpath.triage</code></td><td><code>{ path?, max_items?, llm? }</code></td><td>Verdicts (<code>likely_dead</code> / <code>verify</code> / <code>keep</code>) for warn findings. One batched model call at most; cached by evidence digest; heuristic without a key.</td></tr>
-        <tr><td><code>deadpath.plan</code></td><td><code>{ path? }</code></td><td>Ordered steps ranked by confidence. Never writes.</td></tr>
-        <tr><td><code>deadpath.explain</code></td><td><code>{ id }</code></td><td>One paragraph; model-backed if a key is set.</td></tr>
+        <tr><td><code>deadpath.triage</code></td><td><code>{ path?, max_items?, llm? }</code></td><td>Veto-only counsel: judge <code>remove</code> first, then <code>verify</code>/<code>warn</code>. Cannot strengthen. Keep and note never sent. Cached by evidence digest; heuristic without a key.</td></tr>
+        <tr><td><code>deadpath.plan</code></td><td><code>{ path? }</code></td><td>Ordered steps ranked by judge verdict then confidence. Judge <code>keep</code> omitted. Never writes.</td></tr>
+        <tr><td><code>deadpath.explain</code></td><td><code>{ id, llm? }</code></td><td>One paragraph; model-backed if a key is set. Pass <code>llm: false</code> for heuristic.</td></tr>
         <tr><td><code>deadpath.remember</code></td><td><code>{ id, decision, note?, path? }</code></td><td>Stores <code>keep</code> / <code>false_positive</code> / <code>resolved</code> in memory.</td></tr>
         <tr><td><code>deadpath.memory</code></td><td><code>{ path?, clear? }</code></td><td>Runs, cache stats, open findings, decisions, triage verdict count.</td></tr>
         <tr><td><code>deadpath.languages</code></td><td><code>{}</code></td><td>Support matrix: languages, tier, precision, frameworks, validation commands.</td></tr>

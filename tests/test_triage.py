@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from deadpath import triage as tri
 from deadpath.cli import main
 from deadpath.mcp_server import Session, handle_request
@@ -13,8 +11,8 @@ from deadpath.workflow import build_workflow
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 
-def _finding(fid: str, severity: str, confidence: float, signals: dict | None = None) -> Finding:
-    return Finding(
+def _finding(fid: str, severity: str, confidence: float, signals: dict | None = None, *, verdict: str | None = None) -> Finding:
+    finding = Finding(
         id=fid,
         kind=fid.split(":")[0],
         severity=severity,
@@ -24,9 +22,19 @@ def _finding(fid: str, severity: str, confidence: float, signals: dict | None = 
         confidence=confidence,
         signals=signals or {},
     )
+    if verdict:
+        finding.critique = {
+            "verdict": verdict,
+            "hypotheses_checked": 28,
+            "objections": [],
+            "identification": [],
+            "next_check": "grep once",
+            "security": {},
+        }
+    return finding
 
 
-def test_block_and_note_are_never_sent(isolated_memory, tmp_path, monkeypatch):
+def test_keep_and_note_are_skipped_remove_is_sent(isolated_memory, tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(tri, "available", lambda: True)
 
@@ -38,17 +46,48 @@ def test_block_and_note_are_never_sent(isolated_memory, tmp_path, monkeypatch):
     monkeypatch.setattr(tri, "chat", fake_chat)
     mem = Memory(tmp_path)
     findings = [
-        _finding("orphan_file:a.py", "block", 0.92),
-        _finding("unused_export:b.py:x", "warn", 0.6),
+        _finding("orphan_file:a.py", "block", 0.92, verdict="remove"),
+        _finding("unused_export:b.py:x", "warn", 0.6, verdict="verify"),
         _finding("unused_dep:pyproject.toml:z", "note", 0.4),
+        _finding("orphan_file:nightly.py", "note", 0.37, verdict="keep"),
     ]
     out = tri.triage(findings, mem)
-    assert out["llm"]["called"] and out["llm"]["asked"] == 1
-    assert out["llm"]["skipped_block"] == 1 and out["llm"]["skipped_note"] == 1
-    sent_ids = {i["id"] for i in calls[0]["items"]}
-    assert sent_ids == {"unused_export:b.py:x"}
-    assert set(calls[0]["items"][0]) == {"id", "kind", "path", "symbol", "confidence", "signals", "why"}
-    assert out["verdicts"]["unused_export:b.py:x"]["verdict"] == "likely_dead"
+    assert out["llm"]["called"] and out["llm"]["asked"] == 2
+    assert out["llm"]["skipped_keep"] == 1 and out["llm"]["skipped_note"] == 1
+    assert out["llm"]["reviewed_remove"] == 1 and out["llm"]["reviewed_verify"] == 1
+    sent_ids = [i["id"] for i in calls[0]["items"]]
+    assert sent_ids == ["orphan_file:a.py", "unused_export:b.py:x"]  # remove first
+    assert calls[0]["items"][0]["role"] == "remove"
+    assert "judge" in calls[0]["items"][0]
+    assert out["verdicts"]["orphan_file:a.py"]["verdict"] == "likely_dead"
+
+
+def test_llm_cannot_upgrade_verify_to_likely_dead(isolated_memory, tmp_path, monkeypatch):
+    monkeypatch.setattr(tri, "available", lambda: True)
+
+    def fake_chat(messages, **kwargs):
+        items = json.loads(messages[1]["content"])["items"]
+        return json.dumps({"verdicts": {i["id"]: {"verdict": "likely_dead", "reason": "ship it"} for i in items}}), {"model": "fake"}
+
+    monkeypatch.setattr(tri, "chat", fake_chat)
+    finding = _finding("unused_export:b.py:x", "warn", 0.6, verdict="verify")
+    out = tri.triage([finding], Memory(tmp_path))
+    entry = out["verdicts"][finding.id]
+    assert entry["verdict"] == "verify"
+    assert entry["clamped_from"] == "likely_dead"
+
+
+def test_llm_may_overturn_remove_to_keep(isolated_memory, tmp_path, monkeypatch):
+    monkeypatch.setattr(tri, "available", lambda: True)
+
+    def fake_chat(messages, **kwargs):
+        items = json.loads(messages[1]["content"])["items"]
+        return json.dumps({"verdicts": {i["id"]: {"verdict": "keep", "reason": "temporal worker", "counter": "workflowId"} for i in items}}), {"model": "fake"}
+
+    monkeypatch.setattr(tri, "chat", fake_chat)
+    finding = _finding("orphan_file:a.py", "block", 0.92, verdict="remove")
+    out = tri.triage([finding], Memory(tmp_path))
+    assert out["verdicts"][finding.id]["verdict"] == "keep"
 
 
 def test_verdicts_cached_and_not_reasked(isolated_memory, tmp_path, monkeypatch):
@@ -61,13 +100,12 @@ def test_verdicts_cached_and_not_reasked(isolated_memory, tmp_path, monkeypatch)
         return json.dumps({"verdicts": {i["id"]: {"verdict": "verify", "reason": "grep it"} for i in items}}), {"model": "fake"}
 
     monkeypatch.setattr(tri, "chat", fake_chat)
-    findings = [_finding("unused_export:b.py:x", "warn", 0.6)]
+    findings = [_finding("unused_export:b.py:x", "warn", 0.6, verdict="verify")]
     tri.triage(findings, Memory(tmp_path))
     second = tri.triage(findings, Memory(tmp_path))
     assert count["n"] == 1
     assert second["llm"]["cached"] == 1 and not second["llm"]["called"]
-    # Changed evidence → digest changes → asked again
-    changed = [_finding("unused_export:b.py:x", "warn", 0.6, {"symbol_named_in_string_literal": -0.35})]
+    changed = [_finding("unused_export:b.py:x", "warn", 0.6, {"symbol_named_in_string_literal": -0.35}, verdict="verify")]
     third = tri.triage(changed, Memory(tmp_path))
     assert count["n"] == 2 and third["llm"]["asked"] == 1
 
@@ -82,11 +120,10 @@ def test_budget_caps_items_per_call(isolated_memory, tmp_path, monkeypatch):
         return json.dumps({"verdicts": {i["id"]: {"verdict": "likely_dead", "reason": "ok"} for i in items}}), {"model": "fake"}
 
     monkeypatch.setattr(tri, "chat", fake_chat)
-    findings = [_finding(f"unused_export:m{i}.py:s{i}", "warn", 0.6) for i in range(12)]
+    findings = [_finding(f"unused_export:m{i}.py:s{i}", "warn", 0.6, verdict="verify") for i in range(12)]
     out = tri.triage(findings, Memory(tmp_path), max_items=5)
     assert sizes == [5]
     assert out["llm"]["deferred"] == 7
-    # Deferred findings still receive deterministic heuristic verdicts.
     assert len(out["verdicts"]) == 12
     assert out["llm"]["heuristic"] == 7
 
@@ -127,7 +164,7 @@ def test_workflow_uses_verdicts_for_order_and_skips_keep(isolated_memory, tmp_pa
     payload = build_workflow(result.profile, findings, triage=verdicts)
     assert warn[0].id in payload["kept_by_triage"]
     assert warn[0].id not in payload["selected_findings"]
-    assert payload["llm"]["policy"]
+    assert "veto-only" in payload["llm"]["policy"]
 
 
 def test_cli_and_mcp_triage(isolated_memory, capsys, monkeypatch):
@@ -136,6 +173,7 @@ def test_cli_and_mcp_triage(isolated_memory, capsys, monkeypatch):
     payload = json.loads(capsys.readouterr().out)
     assert payload["llm"]["enabled"] is False
     assert payload["verdicts"]
+    assert payload["llm"]["reviewed_remove"] >= 1
     session = Session()
     reply = handle_request(
         {

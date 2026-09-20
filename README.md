@@ -6,8 +6,8 @@ Dead-code intelligence for Claude Code, Cursor, and Codex: a deterministic
 reachability graph across **16 languages** and **45 frameworks**, an explainable
 **confidence score** per finding, a **judge / devil's advocate** that checks
 hidden live paths (schedulers, entry points, flags) before anything is proposed,
-a **guided dynamic workflow** for the agent, a
-**budgeted LLM triage** step that is asked once and cached, and **long-term
+a **guided dynamic workflow** for the agent, **veto-only LLM counsel** on
+`remove` then `verify` packets (optional, cached), and **long-term
 memory** so every following session costs fewer tokens.
 
 One engine, not three products:
@@ -16,9 +16,10 @@ One engine, not three products:
 2. One stdio **MCP** server (`deadpath.scan`, `deadpath.judge`, `deadpath.workflow`, `deadpath.triage`, `deadpath.plan`, `deadpath.explain`, `deadpath.remember`, `deadpath.memory`, `deadpath.languages`)
 3. Thin plugins: **Claude Code**, **Cursor**, **Codex**
 
-Detection does **not** require an LLM. The model only ranks and explains, and
-only for ambiguous findings. Auto-delete is forbidden; `plan` and `workflow`
-emit ordered suggestions only.
+Detection does **not** require an LLM. The model is optional **veto-only counsel**
+on findings an agent might act on (`remove`, then `verify`). Auto-delete is
+forbidden; `plan` and `workflow` emit ordered suggestions only, and `plan`
+omits judge `keep` findings.
 
 Docs: https://wolfxops.github.io/deadpath/
 
@@ -53,7 +54,7 @@ keeps surfacing the same complaints. Each maps to a mechanism:
 | Legacy debt blocks adoption; need a CI ratchet | **Memory** tracks first/last seen; `scan --only-new` fails only on new `block` |
 | Enterprise wants code-scanning integration and an audit trail | `--format sarif`; decisions with notes in `.deadpath/memory.json` |
 | Agents re-read the repo every session and burn tokens | **Compact packets** (−58% on a repeat visit, measured on the fixture); parse cache by content hash; workflow names exact files |
-| "AI" tools spend model tokens on what a graph already knows | **Budgeted triage**: model sees `warn` findings only, once, batched, as evidence packets; verdicts cached by evidence digest |
+| "AI" tools spend model tokens on what a graph already knows, or skip the dangerous findings | **Veto-only counsel**: graph+judge stay offline; the model reviews `remove` then `verify` packets, cannot strengthen, cannot see file bodies |
 | Agents delete a scheduler job / Lambda handler / feature-flagged module | **Judge layer**: 30+ named counter-hypotheses with `file:line` evidence; verdict `remove` / `verify` / `keep`; identification check; never auto-delete |
 | Dead code is also risky (eval, pickle, `verify=False`, leftover secrets) | **Security lens**: markers reported by line number only; `remove_first` goes to the top of the workflow |
 | Agent output is a wall of prose the developer cannot scan | **Tabular plugin output** (`--format table` / MCP `deadpath.judge`): severity, confidence, devil's advocate, next check, security, effort |
@@ -168,16 +169,27 @@ detected languages and frameworks:
 3. **validate** — `python -c "import pkg"` / `mypy` / `pytest`; `npx tsc --noEmit` / `vitest`; `go build && go test`; `cargo check && cargo test`; `./gradlew test`; `dotnet build`; `bundle exec rspec`; `phpunit`; `swift test`; `flutter test`; `mix test`; `ctest`; `busted`; `prove`; then re-scan
 4. **remember** — `deadpath.remember` so the next session starts from the new baseline
 
-The model is used deliberately, not by default:
+The model is used as **veto-only counsel**, not as a second scanner:
 
-- `block` findings are never sent (the graph already has the answer).
-- `note` findings are never sent (too weak).
-- `warn` findings are sent **once**, in **one batched call**, at most `--max-items`
-  (8) per run, as compact evidence packets (`id · kind · path · symbol · confidence
-  · signals · why`) — never file bodies.
+- Stages 1–3 (graph, confidence, judge) never call a model. Same repo, same
+  verdict, with or without a key — that is what CI and air-gapped installs need.
+- Stage 4 reviews the findings an agent might *act on*: judge `remove` first
+  (highest blast radius if a live path was missed), then `verify` / `warn`.
+- `keep` is never sent (already settled with `file:line` evidence).
+- `note` is never sent (too weak; a model would confabulate).
+- The model cannot *strengthen*: it may confirm `remove`, escalate to `verify`,
+  or overturn to `keep`. It cannot turn `verify` into `likely_dead`.
+- Packets are sent **once**, in **one batched call**, at most `--max-items` (8)
+  per run (`id · kind · path · symbol · confidence · signals · why · judge`) —
+  never file bodies.
 - Verdicts (`likely_dead` / `verify` / `keep`) are cached in memory by evidence
   digest, so an unchanged finding is never asked about twice.
 - Without a key, the same interface returns deterministic heuristic verdicts.
+
+Skipping `block`/`remove` used to look cheaper. It was the wrong safety story:
+those are the deletions that hurt if the regex judge missed a Temporal workflow
+or a house-style entry. The model is a defense attorney over the judge's packet,
+not a rubber stamp.
 
 Verdicts reorder the workflow (`likely_dead` first, `keep` skipped) and set
 per-step `budget_hint`s ("a single grep is enough" vs "read the grep hits").
@@ -218,14 +230,14 @@ deadpath mcp
 | `deadpath.scan` | `{ path?, lang?, only_new?, full?, min_confidence?, memory?, judge?, format? }` | findings JSON (compact) or markdown table |
 | `deadpath.judge` | `{ path?, format? }` | **table by default**: sev, confidence, judge, devil's advocate, next check, security, effort |
 | `deadpath.workflow` | `{ path?, max_findings?, triage?, format? }` | verify/edit/validate/remember; `kept_by_judge`, `security_first`, `quick_wins` |
-| `deadpath.triage` | `{ path?, max_items?, llm?, format? }` | verdicts for warn findings; packets include the judge brief; model is a *second* devil's advocate |
-| `deadpath.plan` | `{ path? }` | ordered deletions/refactors, **no file writes** |
-| `deadpath.explain` | `{ id }` | paragraph (heuristic if no key) |
+| `deadpath.triage` | `{ path?, max_items?, llm?, format? }` | veto-only counsel: judge `remove` first, then `verify`/`warn`; cannot strengthen; keep/note never sent |
+| `deadpath.plan` | `{ path? }` | ordered deletions/refactors; **judge `keep` omitted**; **no file writes** |
+| `deadpath.explain` | `{ id, llm? }` | paragraph (heuristic if no key or `llm: false`) |
 | `deadpath.remember` | `{ id, decision, note?, path? }` | stores a decision in memory |
 | `deadpath.memory` | `{ path?, clear? }` | runs, cache stats, open findings, decisions, verdicts |
 | `deadpath.languages` | `{}` | support matrix |
 
-OpenAI-compatible HTTP is used only by `explain` and `triage`, and only if
+OpenAI-compatible HTTP is used only by `explain` and `triage` (counsel), and only if
 `DEADPATH_API_KEY` or `OPENAI_API_KEY` is set (`DEADPATH_BASE_URL`, `DEADPATH_MODEL`
 optional). No vendor SDKs.
 
@@ -273,9 +285,16 @@ args = ["mcp"]
 
 ```yaml
 - uses: wolfxops/deadpath@main
+  continue-on-error: true   # scan exits 1 when block findings exist; still writes the file
   with:
     path: .
     format: sarif
+    only_new: true
+    output: deadpath.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: deadpath.sarif
 ```
 
 ## Docs

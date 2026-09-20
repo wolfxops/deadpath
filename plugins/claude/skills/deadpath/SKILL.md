@@ -29,8 +29,8 @@ When the user asks about dead, unused, orphan, unreachable, or "is this a cron j
    Name-precision languages (Java, Kotlin, Scala, C#, PHP, Swift, Elixir) never
    reach `block`.
 4. Do not call `deadpath.triage` separately unless the user asks; the workflow
-   already ran it. The model is a *second* devil's advocate on warn findings
-   only (one batched call, cached, heuristic without a key).
+   already ran it. Counsel is veto-only: judge `remove` first, then `verify`.
+   It cannot strengthen a `verify` into a deletion. Heuristic without a key.
 5. Run the workflow's validate commands. Propose a patch; never delete without
    explicit approval. Never print secret values — the judge reports line numbers.
 6. Call MCP `deadpath.remember` with `keep`, `false_positive`, or `resolved` for

@@ -53,18 +53,20 @@ deadpath scan --format sarif &gt; deadpath.sarif</code></pre></div></li>
     </ol>
 
     <h2>Optional: enable the model</h2>
-    <p>Only <code>explain</code> and <code>triage</code> ever call a model, over plain OpenAI-compatible HTTP.</p>
+    <p>Only <code>explain</code> and <code>triage</code> (stage-four counsel) ever call a model, over plain OpenAI-compatible HTTP. Graph, confidence, and judge stay offline.</p>
     <pre><code>export DEADPATH_API_KEY=...          # or OPENAI_API_KEY
 export DEADPATH_BASE_URL=https://api.openai.com   # any OpenAI-compatible endpoint
 export DEADPATH_MODEL=gpt-4o-mini    # optional
-deadpath triage                      # one batched call for warn findings; verdicts cached</code></pre>
-    <div class="callout ok"><p><strong>Budget guarantee.</strong> Block and note findings are never sent. Warn findings are sent once, at most <code>--max-items</code> (default 8) per run, as evidence packets without file bodies. Unchanged findings are never re-asked.</p></div>
+deadpath triage                      # veto-only: remove first, then verify; verdicts cached</code></pre>
+    <div class="callout ok"><p><strong>Budget guarantee.</strong> Keep and note findings are never sent. Remove then verify/warn are sent once, at most <code>--max-items</code> (default 8) per run, as evidence packets without file bodies. The model cannot strengthen a <code>verify</code> into <code>likely_dead</code>. Unchanged findings are never re-asked.</p></div>
 
     <h2>GitHub Action</h2>
     <pre><code>- uses: wolfxops/deadpath@main
   with:
     path: .
-    format: sarif</code></pre>
+    format: sarif
+    only_new: true
+    output: deadpath.sarif</code></pre>
     <p>Use <code>deadpath scan --only-new</code> in CI to fail only on <em>new</em> high-confidence dead code while a legacy backlog is worked down.</p>
 
     <h2>Run the tests</h2>

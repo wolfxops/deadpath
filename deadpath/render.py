@@ -236,7 +236,11 @@ def render_plan_table(findings: list[Finding], *, path: str) -> str:
         [s["order"], s["action"], f"`{s['path']}`" + (f" :: `{s['symbol']}`" if s.get("symbol") else ""), s["severity"], f"{s['confidence']:.2f}", s["reason"]]
         for s in payload["steps"]
     ]
-    head = f"**Deadpath plan** `{path}` — {len(rows)} step(s). Deadpath never deletes files; this is an ordered suggestion list.\n\n"
+    head = f"**Deadpath plan** `{path}` — {len(rows)} step(s)"
+    skipped = payload.get("skipped_keep") or []
+    if skipped:
+        head += f" · {len(skipped)} keep omitted (judge found a live path)"
+    head += ". Deadpath never deletes files; this is an ordered suggestion list.\n\n"
     return head + markdown_table(["#", "action", "target", "sev", "conf", "reason"], rows) + "\n"
 
 
@@ -282,10 +286,11 @@ def render_triage_table(payload: dict[str, Any], findings: list[Finding]) -> str
     head = (
         f"**Deadpath triage** — {'model ' + str(llm.get('model') or 'enabled') if llm.get('enabled') else 'heuristic (no API key)'}"
         f" · asked {llm.get('asked', 0)} · cached {llm.get('cached', 0)} · heuristic {llm.get('heuristic', 0)}"
-        f" · skipped {llm.get('skipped_block', 0)} block + {llm.get('skipped_note', 0)} note\n\n"
+        f" · skip keep {llm.get('skipped_keep', llm.get('skipped_block', 0))} + note {llm.get('skipped_note', 0)}"
+        f" · review remove {llm.get('reviewed_remove', 0)} + verify {llm.get('reviewed_verify', 0)}\n\n"
     )
     if not rows:
-        return head + "No warn findings to triage.\n"
+        return head + "No findings for counsel.\n"
     return head + markdown_table(["verdict", "conf", "finding", "devil's advocate", "reason", "source"], rows) + "\n"
 
 
@@ -428,7 +433,7 @@ def render_workflow(payload: dict[str, Any], *, fmt: str = "md") -> str:
             lines.append(
                 f"- this run: {'model called' if llm.get('called') else 'no model call'} · asked {llm.get('asked', 0)} · "
                 f"cached {llm.get('cached', 0)} · heuristic {llm.get('heuristic', 0)} · "
-                f"skipped {llm.get('skipped_block', 0)} block + {llm.get('skipped_note', 0)} note"
+                f"skip keep {llm.get('skipped_keep', llm.get('skipped_block', 0))} + note {llm.get('skipped_note', 0)}"
             )
     return "\n".join(lines).rstrip() + "\n"
 
@@ -446,14 +451,15 @@ def render_triage(payload: dict[str, Any], findings: list[Finding], *, fmt: str 
         "",
         f"Model: {'enabled (' + str(llm.get('model') or 'OpenAI-compatible') + ')' if llm.get('enabled') else 'not configured — deterministic heuristic verdicts'}",
         f"Asked {llm.get('asked', 0)} · cached {llm.get('cached', 0)} · heuristic {llm.get('heuristic', 0)} · "
-        f"skipped {llm.get('skipped_block', 0)} block (certain) + {llm.get('skipped_note', 0)} note (too weak)"
+        f"skip keep {llm.get('skipped_keep', llm.get('skipped_block', 0))} + note {llm.get('skipped_note', 0)}"
+        f" · review remove {llm.get('reviewed_remove', 0)} + verify {llm.get('reviewed_verify', 0)}"
         + (f" · deferred {llm['deferred']} to next run" if llm.get("deferred") else ""),
         "",
-        "Verdicts are cached in .deadpath/memory.json by evidence digest; unchanged findings are never re-asked.",
+        "Counsel is veto-only on judge remove (first) and verify/warn. Keep and note are never sent. Cached by evidence digest.",
         "",
     ]
     if not verdicts:
-        lines.append("No warn findings to triage.")
+        lines.append("No findings for counsel.")
         return "\n".join(lines) + "\n"
     order = {"likely_dead": 0, "verify": 1, "keep": 2}
     for fid, entry in sorted(verdicts.items(), key=lambda kv: (order.get(kv[1].get("verdict"), 9), kv[0])):
