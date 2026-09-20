@@ -1,6 +1,7 @@
 """Minimal OpenAI-compatible HTTP client. No vendor SDKs.
 
-Used only by ``explain`` and ``triage``. Detection never calls this module.
+Used only by ``explain`` and ``triage`` (stage-four counsel). Graph, confidence,
+and judge never import this module.
 """
 
 from __future__ import annotations

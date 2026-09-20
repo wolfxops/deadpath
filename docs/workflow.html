@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Guided workflow &amp; LLM budget — Deadpath</title>
-  <meta name="description" content="How Deadpath turns findings into a language-aware agent checklist and uses the LLM only for ambiguous findings, once, with cached verdicts.">
+  <meta name="description" content="How Deadpath turns findings into a language-aware agent checklist and uses the LLM only as veto-only counsel on remove and verify packets.">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
   <main class="container page prose">
     <span class="eyebrow reveal">Guided dynamic workflow</span>
     <h1 class="reveal d1">Tell the agent what to do, not what to read.</h1>
-    <p class="lead reveal d2"><code>deadpath workflow</code> / MCP <code>deadpath.workflow</code> turns findings into an ordered checklist shaped by the repository's languages, frameworks and history. The first verify step is the <a href="judge.html">judge's next check</a> — the one artifact that would settle a hidden live path. It is data an agent executes, not prose it interprets — and it is where the model is used deliberately, not by default.</p>
+    <p class="lead reveal d2"><code>deadpath workflow</code> / MCP <code>deadpath.workflow</code> turns findings into an ordered checklist shaped by the repository's languages, frameworks and history. The first verify step is the <a href="judge.html">judge's next check</a> — the one artifact that would settle a hidden live path. It is data an agent executes, not prose it interprets. The model, if a key is set, is <em>counsel for the defense</em> over that packet — never a second scanner.</p>
 
     <div class="pipeline reveal d3" style="margin: 40px 0 16px">
       <div class="node"><div class="bubble">1</div><h3>verify</h3><p>Targeted grep and bounded reads. Never "read the repo".</p></div>
@@ -38,33 +38,43 @@
       <div class="node"><div class="bubble">4</div><h3>remember</h3><p>Record keep / false_positive / resolved so the next session starts warm.</p></div>
     </div>
 
+    <h2>Why stages 1–3 stay offline</h2>
+    <p>Putting a model in the graph or the judge looks like “more reasoning.” Buyers who have been burned by AI dead-code tools will not buy it:</p>
+    <ul>
+      <li><strong>CI would flap.</strong> The same commit must produce the same <code>block</code> without a network round-trip or a model version bump.</li>
+      <li><strong>Air-gapped and no-key installs must still work.</strong> Detection that requires an API key is a scanner you cannot run in the job that matters.</li>
+      <li><strong>The agent already is an LLM.</strong> A second ungrounded guesser competing with Claude/Cursor/Codex is noise. What those agents lack is a deterministic reachability graph and named counter-hypotheses with <code>file:line</code> evidence.</li>
+      <li><strong>File bodies are a non-starter</strong> for secrets, customer code, and procurement. Packets never include source.</li>
+    </ul>
+    <p>Stage four is where a model <em>does</em> add value: reading the judge's packet and trying to <em>save</em> code that is about to be proposed for deletion. Skipping <code>block</code>/<code>remove</code> used to look cheaper. That was the wrong safety story — those are the deletions that hurt if the regex judge missed a Temporal workflow or a house-style entry.</p>
+
     <h2>Optimal LLM use, by construction</h2>
-    <p>Most "AI dead-code" tools stream the whole finding list — or the whole repository — through a model. Deadpath inverts that. The deterministic engine decides <em>which</em> findings deserve a model's judgement, packages <em>only the evidence</em>, asks <em>once</em>, and remembers the answer.</p>
+    <p>Most "AI dead-code" tools stream the whole finding list — or the whole repository — through a model. Deadpath inverts that. The deterministic engine builds the case file; the model is a veto-only second devil's advocate over that file, asked once, remembered.</p>
     <div class="grid cols-3">
       <article class="card">
-        <span class="tag block">block</span>
-        <h3>Never sent</h3>
-        <p>Confidence ≥ 0.85 means the graph already has the answer. The agent verifies with one grep and proposes the patch. Spending tokens here buys nothing.</p>
+        <span class="tag block">remove</span>
+        <h3>Counsel first</h3>
+        <p>Judge <code>remove</code> (usually scan <code>block</code>) is the highest blast radius. The model may confirm, escalate to <code>verify</code>, or overturn to <code>keep</code>. It cannot invent files.</p>
       </article>
       <article class="card">
-        <span class="tag warn">warn</span>
-        <h3>Triaged once, batched</h3>
-        <p>Ambiguous findings go to the model in a single call, at most 8 per run, as compact packets: <code>id · kind · path · symbol · confidence · signals · why</code>. No file bodies. Verdict: <code>likely_dead</code>, <code>verify</code>, or <code>keep</code>.</p>
+        <span class="tag warn">verify</span>
+        <h3>Counsel once, batched</h3>
+        <p>Ambiguous findings go in the same call, at most 8 per run, as compact packets: <code>id · kind · path · symbol · confidence · signals · why · judge</code>. No file bodies. The model cannot upgrade these to <code>likely_dead</code>.</p>
       </article>
       <article class="card">
-        <span class="tag note">note</span>
+        <span class="tag note">keep / note</span>
         <h3>Never sent</h3>
-        <p>Below 0.55 the evidence is too thin for a model to add anything but confabulation. Notes stay in the report as leads for humans.</p>
+        <p><code>keep</code> already has <code>file:line</code> evidence. <code>note</code> is too thin for a model to add anything but confabulation. Both stay in the report for humans.</p>
       </article>
     </div>
-    <div class="callout"><p><strong>Cached by evidence digest.</strong> Every verdict is stored in <code>.deadpath/memory.json</code> under a hash of the finding's path, symbol, signals and confidence. If nothing about the evidence changed, the model is not asked again — across sessions, agents and machines that share the memory file.</p></div>
+    <div class="callout"><p><strong>Cached by evidence digest.</strong> Every verdict is stored in <code>.deadpath/memory.json</code> under a hash of the finding's path, symbol, signals, confidence and judge verdict. If nothing about the evidence changed, the model is not asked again — across sessions, agents and machines that share the memory file.</p></div>
     <div class="callout ok"><p><strong>Offline identical.</strong> Without <code>DEADPATH_API_KEY</code>, <code>triage</code> returns deterministic heuristic verdicts from the same signals (framework/entry signal → <code>keep</code>; string/dynamic signal → <code>verify</code>; clean graph → <code>likely_dead</code>). Workflows have the same shape either way.</p></div>
 
     <h2>How verdicts shape the workflow</h2>
     <div class="table-wrap"><table>
       <thead><tr><th>Verdict</th><th>Ordering</th><th>Budget hint given to the agent</th></tr></thead>
       <tbody>
-        <tr><td><code>likely_dead</code></td><td>First among warn findings, right after blocks</td><td>"A single grep is enough; skip reading the file unless the grep hits."</td></tr>
+        <tr><td><code>likely_dead</code></td><td>First (confirmed remove, after security_first)</td><td>"A single grep is enough; skip reading the file unless the grep hits."</td></tr>
         <tr><td><code>verify</code></td><td>After likely_dead</td><td>"Read the grep hits, not the whole file."</td></tr>
         <tr><td><code>keep</code></td><td>Removed from <code>selected_findings</code>, listed in <code>kept_by_triage</code></td><td>"Skip these; record them with <code>deadpath.remember</code> if you agree."</td></tr>
       </tbody>
@@ -89,8 +99,8 @@
   "profile": { "primary": "py", "frameworks": ["fastapi", "pytest"], "monorepo": false, ... },
   "policy": { "block_threshold": 0.85, "warn_threshold": 0.55,
               "delete_requires": "explicit user approval after validation steps pass" },
-  "llm": { "policy": "model sees only warn findings, once, as compact evidence packets; verdicts are cached by evidence digest",
-           "enabled": true, "called": true, "asked": 1, "cached": 0, "heuristic": 0, "skipped_block": 2, "skipped_note": 0 },
+  "llm": { "policy": "model is a veto-only counsel on judge remove (first) and verify/warn packets; cannot strengthen verify to likely_dead; keep and note are never sent; verdicts cached by evidence digest; never file bodies",
+           "enabled": true, "called": true, "asked": 4, "cached": 0, "heuristic": 0, "skipped_keep": 1, "skipped_note": 0, "reviewed_remove": 3, "reviewed_verify": 1 },
   "selected_findings": ["orphan_file:pkg/orphan.py", "unused_export:pkg/exports.py:dead_symbol", "unused_export:pkg/hooks.py:maybe_dead"],
   "kept_by_triage": [],
   "steps": [

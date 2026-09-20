@@ -84,18 +84,22 @@ TOOLS = [
     {
         "name": "deadpath.explain",
         "description": (
-            "Explain one finding by id. Uses an OpenAI-compatible API only if a key is set; "
+            "Explain one finding by id. Uses an OpenAI-compatible API only if a key is set and llm is not false; "
             "otherwise a heuristic paragraph."
         ),
         "inputSchema": {
             "type": "object",
-            "properties": {"id": {"type": "string", "description": "Finding id"}, **_PATH_PROPS},
+            "properties": {
+                "id": {"type": "string", "description": "Finding id"},
+                **_PATH_PROPS,
+                "llm": {"type": "boolean", "description": "Set false to force the heuristic paragraph."},
+            },
             "required": ["id"],
         },
     },
     {
         "name": "deadpath.plan",
-        "description": "Ordered deletion/refactor suggestions ranked by confidence. Never writes files.",
+        "description": "Ordered deletion/refactor suggestions ranked by judge verdict then confidence. Judge keep findings are omitted. Never writes files.",
         "inputSchema": {"type": "object", "properties": _PATH_PROPS},
     },
     {
@@ -110,17 +114,19 @@ TOOLS = [
             "properties": {
                 **_PATH_PROPS,
                 "max_findings": {"type": "integer", "description": "Cap findings in the workflow (default 12)."},
-                "triage": {"type": "boolean", "description": "Attach triage verdicts (default true; LLM only if a key is set, else heuristic)."},
+                "triage": {"type": "boolean", "description": "Attach counsel/triage verdicts (default true; LLM only if a key is set, else heuristic)."},
+                "llm": {"type": "boolean", "description": "Set false to force heuristic counsel even when a key is set."},
             },
         },
     },
     {
         "name": "deadpath.triage",
         "description": (
-            "Budgeted second opinion on ambiguous (warn) findings. Sends compact evidence packets — never "
-            "file contents — for at most max_items findings in one call, caches verdicts "
-            "(likely_dead | verify | keep) in memory by evidence digest, and never re-asks about unchanged "
-            "findings. Without an API key returns deterministic heuristic verdicts."
+            "Veto-only second opinion on findings the agent might act on. Judge remove goes first "
+            "(highest blast radius), then verify/warn. Keep and note are never sent. Packets are "
+            "compact evidence — never file contents — at most max_items per call. The model cannot "
+            "strengthen verify to likely_dead. Verdicts (likely_dead | verify | keep) cache by "
+            "evidence digest. Without an API key returns deterministic heuristic verdicts."
         ),
         "inputSchema": {
             "type": "object",
@@ -242,7 +248,8 @@ def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str
         verdicts = None
         if arguments.get("triage", True):
             root, _, _, _, memory = _scan_args(arguments)
-            verdicts = triage(result.findings, Memory(_root_dir(root), enabled=memory))
+            use_llm = None if arguments.get("llm", True) else False
+            verdicts = triage(result.findings, Memory(_root_dir(root), enabled=memory), use_llm=use_llm)
         payload = build_workflow(
             result.profile,
             result.findings,
@@ -279,7 +286,7 @@ def dispatch_tool(name: str, arguments: dict[str, Any], session: Session) -> str
             finding = find_by_id(result.findings + result.suppressed, str(finding_id))
         if finding is None:
             raise ValueError(f"unknown finding id: {finding_id}")
-        return explain_finding(finding)
+        return explain_finding(finding, use_llm=None if arguments.get("llm", True) else False)
     if name == "deadpath.remember":
         finding_id = arguments.get("id")
         decision = arguments.get("decision")

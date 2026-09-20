@@ -59,7 +59,7 @@
         <tr><td><code>files</code></td><td>Per file: SHA-256 of content and extracted facts (exports, imports/references, decorators, bases, string literals, tokens). Never the source itself.</td><td>Unchanged files are not re-parsed, in any language. <code>cache_hits</code> / <code>cache_misses</code> are reported on every run.</td></tr>
         <tr><td><code>findings</code></td><td>Per finding id: first_seen, last_seen, seen_count, last confidence, status <code>open</code>/<code>resolved</code>.</td><td>Delta per run: <code>new</code>, <code>persisting</code>, <code>resolved</code>. <code>stable_across_runs</code> nudges confidence.</td></tr>
         <tr><td><code>decisions</code></td><td>Per finding id: <code>keep</code> | <code>false_positive</code> | <code>resolved</code>, note, timestamp.</td><td><code>keep</code> and <code>false_positive</code> suppress the finding from output and the plan. Auto-flipped to <code>resolved</code> when the finding disappears.</td></tr>
-        <tr><td><code>llm</code></td><td>Per finding id: triage verdict, reason, model, evidence digest, timestamp.</td><td>The model is asked about a finding at most once per distinct evidence state. Heuristic verdicts are upgraded when a key becomes available.</td></tr>
+        <tr><td><code>llm</code></td><td>Per finding id: counsel verdict, reason, model, evidence digest, timestamp.</td><td>Veto-only on remove then verify. Asked at most once per evidence state. Heuristic verdicts are upgraded when a key becomes available.</td></tr>
         <tr><td><code>runs</code></td><td>Last 50 runs: totals, delta counts, cache stats.</td><td>Trend line for the team; ratchet evidence in CI.</td></tr>
         <tr><td><code>profile</code></td><td>Last detected language/framework profile.</td><td>Lets an agent answer "what kind of repo is this" without a re-scan.</td></tr>
       </tbody>
@@ -70,9 +70,9 @@
 $ deadpath scan . --format json --compact | jq .delta.counts
 { "new": 3, "persisting": 0, "resolved": 0, "suppressed": 0 }
 
-# workflow triages the one warn finding (LLM if a key is set, heuristic otherwise) and caches the verdict
+# workflow runs heuristic counsel on remove+verify (LLM if a key is set) and caches verdicts
 $ deadpath workflow . --format json | jq .llm
-{ "enabled": false, "called": false, "asked": 0, "cached": 0, "heuristic": 1, "skipped_block": 2, "skipped_note": 0, ... }
+{ "enabled": false, "called": false, "asked": 0, "cached": 0, "heuristic": 4, "skipped_keep": 1, "skipped_note": 0, ... }
 
 # agent decides one finding is intentional public API
 $ deadpath remember unused_export:pkg/exports.py:dead_symbol --decision keep --note "plugin API"

@@ -8,8 +8,9 @@ from deadpath.llm import LLMUnavailable, available, chat
 from deadpath.scan import Finding
 
 
-def explain(finding: Finding) -> str:
-    if available():
+def explain(finding: Finding, *, use_llm: bool | None = None) -> str:
+    llm_ok = available() if use_llm is None else (use_llm and available())
+    if llm_ok:
         try:
             return _llm_explain(finding)
         except LLMUnavailable:

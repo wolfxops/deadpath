@@ -37,7 +37,7 @@
       <div class="node"><div class="bubble">3</div><h3>Identification</h3><p>Are we pointing at the right thing? Generic names, barrels, parse failures.</p></div>
       <div class="node"><div class="bubble">4</div><h3>Verdict</h3><p><code>remove</code> / <code>verify</code> / <code>keep</code>, adjusted confidence, security, effort.</p></div>
     </div>
-    <p class="muted small reveal">No LLM is involved. The optional <a href="workflow.html">triage</a> step is a <em>second</em> devil's advocate that sees the judge's notes and names anything the artifacts might have missed — still never file bodies, still once, still cached.</p>
+    <p class="muted small reveal">The judge itself is deterministic — no LLM. Optional <a href="workflow.html">counsel</a> is a <em>second</em> devil's advocate over the judge's packet: it may confirm, escalate, or overturn a <code>remove</code>, and it cannot strengthen a <code>verify</code>. Still never file bodies, still once, still cached.</p>
 
     <h2>Why this exists</h2>
     <p>The most expensive false positive in dead-code cleanup is not a FastAPI route (framework detection already handles that). It is a <em>hidden live path</em>: a nightly job, a Lambda handler string, a Makefile target, a feature flag that is off today. Agents that delete those “unused” files are fast and wrong. The judge is the due-diligence layer that keeps developer velocity high without trading away safety.</p>
@@ -83,7 +83,7 @@
         <thead><tr><th>Hypothesis</th><th>Looks in</th><th>Strength</th><th>Why it matters</th></tr></thead>
         <tbody>
           <tr><td><code>explicit_keep_marker</code></td><td><code>deadpath: keep</code> / <code>deadpath-ignore</code> on the target</td><td>strong</td><td>The author already ruled. Honor it.</td></tr>
-          <tr><td><code>scheduled_job</code></td><td>crontab, celery beat, k8s CronJob, workflow <code>schedule:</code>, systemd timer, sidekiq, whenever</td><td>strong</td><td>Jobs are invoked by a clock, not an import.</td></tr>
+          <tr><td><code>orchestration_workflow</code></td><td>Temporal/Cadence, Prefect, Dagster, Airflow DAG ids</td><td>strong</td><td>Orchestrators invoke by workflow/task id, not by import.</td></tr>
           <tr><td><code>container_or_process_entry</code></td><td>Dockerfile CMD/ENTRYPOINT, Procfile, compose, k8s command, systemd/supervisor</td><td>strong</td><td>The process table is the real entry graph.</td></tr>
           <tr><td><code>serverless_handler</code></td><td>serverless.yml, SAM, Azure <code>function.json</code>, vercel.json, wrangler.toml, Firebase, Zappa</td><td>strong</td><td>Clouds invoke by handler string.</td></tr>
           <tr><td><code>cli_entry_point</code></td><td><code>console_scripts</code>, package <code>bin</code>, <code>python -m</code> in scripts/CI</td><td>strong</td><td>Tools are executed, not imported.</td></tr>
@@ -138,7 +138,7 @@
       <table>
         <thead><tr><th>Corner case</th><th>Hypothesis</th><th>Safe action</th></tr></thead>
         <tbody>
-          <tr><td>Nightly / cron / celery beat / k8s CronJob / GitHub <code>schedule:</code></td><td><code>scheduled_job</code></td><td>If the schedule is live, <code>remember keep</code>. If it is disabled, remove the schedule entry <em>and</em> the code in the same patch.</td></tr>
+          <tr><td>Temporal / Prefect / Dagster / Airflow DAG</td><td><code>orchestration_workflow</code></td><td>If the workflow is still registered, <code>remember keep</code>. If it is retired, remove the registration and the code together.</td></tr>
           <tr><td>Dockerfile <code>CMD</code>, Procfile, systemd unit</td><td><code>container_or_process_entry</code></td><td>Confirm the process is still deployed.</td></tr>
           <tr><td>Lambda / Cloud Functions / Azure Functions handler string</td><td><code>serverless_handler</code></td><td>Open the manifest; platforms invoke by string.</td></tr>
           <tr><td><code>python -m pkg.job</code> in a Makefile or workflow</td><td><code>cli_entry_point</code> / <code>ci_or_build_invocation</code></td><td>Check whether that step still runs in CI or on a box.</td></tr>

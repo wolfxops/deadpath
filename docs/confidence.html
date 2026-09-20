@@ -51,7 +51,7 @@
         <div class="table-wrap"><table>
           <thead><tr><th>Confidence</th><th>Severity</th><th>Meaning</th></tr></thead>
           <tbody>
-            <tr><td>≥ 0.85</td><td><span class="tag block">block</span></td><td>High confidence. Exit code 1. Goes in the plan. Never sent to a model.</td></tr>
+            <tr><td>≥ 0.85</td><td><span class="tag block">block</span></td><td>High confidence. Exit code 1. Goes in the plan unless the judge says <code>keep</code>. Counsel reviews it as a veto, not a skip.</td></tr>
             <tr><td>≥ 0.55</td><td><span class="tag warn">warn</span></td><td>Probably dead, but a signal hints at dynamic or framework use. Triaged once, then verified.</td></tr>
             <tr><td>&lt; 0.55</td><td><span class="tag note">note</span></td><td>Lead only. Never fails CI, never sent to a model.</td></tr>
             <tr><td>&lt; 0.25</td><td>dropped</td><td>Default <code>--min-confidence</code>. Raise it for stricter output.</td></tr>

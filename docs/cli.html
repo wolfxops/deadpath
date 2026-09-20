@@ -101,9 +101,9 @@ deadpath mcp</code></pre>
     <pre><code>{
   "policy": { "block_threshold": 0.85, "warn_threshold": 0.55,
               "delete_requires": "explicit user approval after validation steps pass" },
-  "llm": { "policy": "model sees only warn findings, once, as compact evidence packets; ...",
-           "enabled": false, "called": false, "asked": 0, "cached": 0, "heuristic": 1,
-           "skipped_block": 2, "skipped_note": 0 },
+  "llm": { "policy": "veto-only counsel on remove then verify; keep/note never sent; ...",
+           "enabled": false, "called": false, "asked": 0, "cached": 0, "heuristic": 4,
+           "skipped_keep": 1, "skipped_note": 0, "reviewed_remove": 3, "reviewed_verify": 1 },
   "selected_findings": [...], "kept_by_triage": [...], "omitted_findings": 0,
   "steps": [
     { "id": "verify-02", "phase": "verify", "finding_id": "...", "grep": "maybe_dead",
@@ -120,8 +120,8 @@ deadpath mcp</code></pre>
     "unused_export:pkg/hooks.py:maybe_dead": {
       "verdict": "verify", "reason": "...", "model": "heuristic", "digest": "9f2c…", "at": "2026-09-08T19:40:00Z" }
   },
-  "llm": { "enabled": true, "called": true, "asked": 3, "cached": 5, "heuristic": 0,
-           "skipped_block": 4, "skipped_note": 7, "deferred": 0, "model": "gpt-4o-mini",
+  "llm": { "enabled": true, "called": true, "asked": 4, "cached": 5, "heuristic": 0,
+           "skipped_keep": 1, "skipped_note": 0, "reviewed_remove": 3, "reviewed_verify": 1, "deferred": 0, "model": "gpt-4o-mini",
            "prompt_tokens_estimate": 612 }
 }</code></pre>
 
@@ -129,10 +129,10 @@ deadpath mcp</code></pre>
     <p><code>deadpath judge</code> prints the due-diligence table: prosecution vs devil's advocate, identification, security lens, effort. Default format is <code>table</code>; <code>md</code> adds case-file write-ups; <code>json</code> is the machine envelope. See <a href="judge.html">Judge</a>.</p>
 
     <h2>Plan</h2>
-    <p><code>deadpath plan</code> returns an ordered suggestion list ranked by confidence. Deadpath never deletes files and never writes a patch in v0.</p>
+    <p><code>deadpath plan</code> returns an ordered suggestion list ranked by judge verdict then confidence. Judge <code>keep</code> findings are omitted. Deadpath never deletes files and never writes a patch in v0.</p>
 
     <h2>Explain</h2>
-    <p>Optional OpenAI-compatible HTTP if <code>DEADPATH_API_KEY</code> or <code>OPENAI_API_KEY</code> is set; otherwise a heuristic paragraph that names the signals that mattered. No vendor SDKs.</p>
+    <p>Optional OpenAI-compatible HTTP if <code>DEADPATH_API_KEY</code> or <code>OPENAI_API_KEY</code> is set; otherwise a heuristic paragraph that names the signals that mattered. Pass <code>--no-llm</code> / MCP <code>llm: false</code> to force the heuristic. No vendor SDKs.</p>
   </main>
 
   <footer class="site-footer">

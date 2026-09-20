@@ -23,7 +23,8 @@ Call the Deadpath MCP:
    are unmonitored attack surface). Values are never shown — only line numbers.
 4. `deadpath.workflow` — ordered verify → edit → validate → remember. Follow
    `next_check` / `budget_hint`. Read only the files it names. Findings the judge
-   ruled `keep` are already omitted.
+   ruled `keep` are already omitted. Workflow counsel is veto-only on `remove`
+   then `verify`; it cannot upgrade `verify` to a deletion.
 5. Run the validate commands, propose a patch, never delete without explicit approval.
 6. `deadpath.remember` — record `keep` / `false_positive` / `resolved`.
 7. Optional: `deadpath.explain` (includes the judge rationale), `deadpath.languages`.

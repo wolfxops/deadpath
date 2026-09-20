@@ -47,6 +47,28 @@ def test_explain_heuristic_without_key(capsys, monkeypatch) -> None:
     assert "dead_symbol" in captured.out
 
 
+def test_explain_no_llm_flag_skips_model(capsys, monkeypatch) -> None:
+    monkeypatch.setenv("DEADPATH_API_KEY", "sk-test")
+
+    def boom(*_a, **_k):
+        raise AssertionError("LLM should not be called")
+
+    monkeypatch.setattr("deadpath.explain.chat", boom)
+    code = main(
+        [
+            "explain",
+            "unused_export:pkg/exports.py:dead_symbol",
+            str(DEADAPP),
+            "--mock",
+            "--no-llm",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "dead_symbol" in captured.out
+    assert "Deadpath classified" in captured.out
+
+
 def test_unknown_command_help() -> None:
     code = main([])
     assert code == 2

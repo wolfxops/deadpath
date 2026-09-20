@@ -57,9 +57,9 @@ def _main(argv: list[str]) -> int:
     wf_p.add_argument("--format", choices=("json", "md", "table"), default="md")
     wf_p.add_argument("--max", type=int, default=12, help="Max findings to include")
     wf_p.add_argument("--no-triage", action="store_true", help="Skip triage verdicts (LLM or heuristic)")
-    wf_p.add_argument("--no-llm", action="store_true", help="Use heuristic triage even if an API key is set")
+    wf_p.add_argument("--no-llm", action="store_true", help="Use heuristic counsel even if an API key is set")
 
-    tri_p = sub.add_parser("triage", help="Budgeted LLM/heuristic second opinion on ambiguous (warn) findings; verdicts cached in memory")
+    tri_p = sub.add_parser("triage", help="Veto-only LLM/heuristic counsel on judge remove + verify findings; verdicts cached in memory")
     _add_common(tri_p)
     tri_p.add_argument("--format", choices=("json", "md", "table"), default="md")
     tri_p.add_argument("--max-items", type=int, default=8, help="Max findings sent to the model per run")
@@ -70,6 +70,7 @@ def _main(argv: list[str]) -> int:
     explain_p = sub.add_parser("explain", help="Explain one finding (LLM optional)")
     explain_p.add_argument("finding_id")
     _add_common(explain_p)
+    explain_p.add_argument("--no-llm", action="store_true", help="Heuristic paragraph even if an API key is set")
 
     rem_p = sub.add_parser("remember", help="Store a decision for a finding in .deadpath/memory.json")
     rem_p.add_argument("finding_id")
@@ -159,7 +160,7 @@ def _main(argv: list[str]) -> int:
         if finding is None:
             print(f"deadpath: unknown finding id: {args.finding_id}", file=sys.stderr)
             return 2
-        sys.stdout.write(explain_finding(finding) + "\n")
+        sys.stdout.write(explain_finding(finding, use_llm=False if args.no_llm else None) + "\n")
         return 0
     parser.print_help()
     return 2
