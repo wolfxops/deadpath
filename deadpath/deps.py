@@ -70,22 +70,24 @@ def imported_names(root: Path, ts_files: list[Path], other_files: list[Path]) ->
         except ValueError:
             rel = path.as_posix()
         text = _read(path)
-        names.update(spec.refs(rel, text, ctx_by_lang[key]))
-        names.update(_spec_variants(item) for item in spec.refs(rel, text, ctx_by_lang[key]))
+        refs = spec.refs(rel, text, ctx_by_lang[key])
+        names.update(refs)
+        for item in refs:
+            names.update(_spec_variants(item))
         if key == "rust":
             names.update(re.findall(r"^\s*use\s+([a-z][\w]*)::", text, re.MULTILINE))
             names.update(re.findall(r"^\s*extern\s+crate\s+(\w+)", text, re.MULTILINE))
-        if key in {"java", "kotlin", "scala"}:
+        elif key in {"java", "kotlin", "scala"}:
             names.update(re.findall(r"^\s*import\s+(?:static\s+)?([\w.]+)", text, re.MULTILINE))
-        if key == "php":
+        elif key == "php":
             names.update(re.findall(r"^\s*use\s+([\w\\]+)", text, re.MULTILINE))
-        if key in {"swift", "elixir"}:
+        elif key in {"swift", "elixir"}:
             names.update(re.findall(r"^\s*(?:import|use|alias|require)\s+([A-Z][\w.]*)", text, re.MULTILINE))
-        if key == "dart":
+        elif key == "dart":
             names.update(re.findall(r"""(?:import|export)\s+['"](package:[\w/]+)""", text))
-        if key == "csharp":
+        elif key == "csharp":
             names.update(re.findall(r"^\s*(?:global\s+)?using\s+(?:static\s+)?([\w.]+)", text, re.MULTILINE))
-        if key == "ruby":
+        elif key == "ruby":
             names.update(re.findall(r"""^\s*require(?:_relative)?\s+['"]([^'"]+)""", text, re.MULTILINE))
     expanded: set[str] = set()
     for name in names:
