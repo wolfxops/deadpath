@@ -19,7 +19,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from unreach.polyglot import LANGS, lang_for_suffix
+from deadpath.polyglot import LANGS, lang_for_suffix
 
 PY_SUFFIXES = (".py",)
 TS_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".vue", ".svelte")
@@ -473,7 +473,7 @@ def _config_tokens(root: Path) -> set[str]:
             break
         if not path.is_file():
             continue
-        if any(part in {".git", "node_modules", ".venv", "venv", "__pycache__", ".unreach", "dist", "build", "target", "vendor"} for part in path.parts):
+        if any(part in {".git", "node_modules", ".venv", "venv", "__pycache__", ".deadpath", "dist", "build", "target", "vendor"} for part in path.parts):
             continue
         if path.suffix not in CONFIG_SUFFIXES and path.name not in CONFIG_NAMES:
             continue

@@ -5,7 +5,7 @@ Parsing is split into two phases so results can be cached:
 1. ``extract_python_facts`` turns one file into a JSON-serializable dict.
 2. ``build_python_graph`` links facts into modules.
 
-The optional ``cache`` object (see ``unreach.memory``) lets a second scan skip
+The optional ``cache`` object (see ``deadpath.memory``) lets a second scan skip
 re-parsing files whose content hash did not change.
 """
 

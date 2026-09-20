@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from unreach.mcp_server import Session, handle_request
-from unreach.scan import Finding, redact_text, scan_path
+from deadpath.mcp_server import Session, handle_request
+from deadpath.scan import Finding, redact_text, scan_path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEADAPP = ROOT / "fixtures" / "deadapp"
@@ -64,19 +64,19 @@ def test_mcp_scan_tool() -> None:
         {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
         session,
     )
-    assert init and init["result"]["serverInfo"]["name"] == "unreach"
+    assert init and init["result"]["serverInfo"]["name"] == "deadpath"
     listed = handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, session)
     names = {tool["name"] for tool in listed["result"]["tools"]}
     assert names == {
-        "unreach.scan",
-        "unreach.judge",
-        "unreach.explain",
-        "unreach.plan",
-        "unreach.workflow",
-        "unreach.triage",
-        "unreach.remember",
-        "unreach.memory",
-        "unreach.languages",
+        "deadpath.scan",
+        "deadpath.judge",
+        "deadpath.explain",
+        "deadpath.plan",
+        "deadpath.workflow",
+        "deadpath.triage",
+        "deadpath.remember",
+        "deadpath.memory",
+        "deadpath.languages",
     }
     called = handle_request(
         {
@@ -84,7 +84,7 @@ def test_mcp_scan_tool() -> None:
             "id": 3,
             "method": "tools/call",
             "params": {
-                "name": "unreach.scan",
+                "name": "deadpath.scan",
                 "arguments": {"path": str(DEADAPP), "mock": True, "memory": False},
             },
         },

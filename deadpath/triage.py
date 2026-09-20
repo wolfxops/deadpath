@@ -11,7 +11,7 @@ ranking and second-opinion on *ambiguous* (``warn``) findings. Policy:
   unchanged finding is never asked about again.
 * Without a key the same interface returns deterministic heuristic verdicts,
   so workflows behave identically offline.
-* The judge layer (``unreach.critic``) runs first and deterministically. Its
+* The judge layer (``deadpath.critic``) runs first and deterministically. Its
   verdict, sustained objections and identification caveats travel in the packet,
   and the model is asked to act as a *second* devil's advocate: name the
   strongest reason the code could still be live that the judge missed, then
@@ -26,9 +26,9 @@ import hashlib
 import json
 from typing import Any
 
-from unreach.llm import LLMUnavailable, available, chat
-from unreach.memory import Memory, estimate_tokens
-from unreach.scan import Finding
+from deadpath.llm import LLMUnavailable, available, chat
+from deadpath.memory import Memory, estimate_tokens
+from deadpath.scan import Finding
 
 VERDICTS = ("likely_dead", "verify", "keep")
 DEFAULT_MAX_ITEMS = 8
@@ -194,7 +194,7 @@ def triage(
 
 
 def _entry(finding: Finding, verdict: str, reason: str, model: str) -> dict[str, Any]:
-    from unreach.memory import _now
+    from deadpath.memory import _now
 
     return {"digest": evidence_digest(finding), "verdict": verdict, "reason": reason, "model": model, "at": _now()}
 

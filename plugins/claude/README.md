@@ -1,12 +1,12 @@
-# Unreach for Claude Code
+# Deadpath for Claude Code
 
-Same engine as the CLI: `unreach mcp` on stdio.
+Same engine as the CLI: `deadpath mcp` on stdio.
 
 ## Marketplace
 
 ```text
-/plugin marketplace add wolfxops/unreach
-/plugin install unreach
+/plugin marketplace add wolfxops/deadpath
+/plugin install deadpath
 ```
 
 ## MCP (manual)
@@ -14,12 +14,12 @@ Same engine as the CLI: `unreach mcp` on stdio.
 ```json
 {
   "mcpServers": {
-    "unreach": {
-      "command": "unreach",
+    "deadpath": {
+      "command": "deadpath",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-When the user asks about dead or unused code, call `unreach.scan` then `unreach.plan`. Never delete files.
+When the user asks about dead or unused code, call `deadpath.scan` then `deadpath.plan`. Never delete files.

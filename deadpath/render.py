@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from unreach import __version__
-from unreach.plan import PlanStep, plan_payload
-from unreach.scan import Finding, ScanResult, findings_to_json
+from deadpath import __version__
+from deadpath.plan import PlanStep, plan_payload
+from deadpath.scan import Finding, ScanResult, findings_to_json
 
 
 def render_scan(findings: list[Finding], *, path: str, fmt: str) -> str:
@@ -169,14 +169,14 @@ def render_result_table(result: ScanResult, *, only_new: bool = False) -> str:
     counts = result.counts()
     profile = result.profile
     head = [
-        f"**Unreach scan** `{result.path}` — {counts['total']} finding(s): {counts['block']} block · {counts['warn']} warn · {counts['note']} note"
+        f"**Deadpath scan** `{result.path}` — {counts['total']} finding(s): {counts['block']} block · {counts['warn']} warn · {counts['note']} note"
         + (f" · {', '.join(profile.frameworks)}" if profile.frameworks else ""),
         _summary_line(judge_summary(findings)),
         "",
     ]
     if not findings:
         return "\n".join(head) + "No dead-code findings.\n"
-    tail = ["", "Confidence shown after the judge layer (scan value in parentheses when it changed). Unreach never deletes files."]
+    tail = ["", "Confidence shown after the judge layer (scan value in parentheses when it changed). Deadpath never deletes files."]
     if result.suppressed:
         tail.append(f"Suppressed by remembered decisions: {len(result.suppressed)}.")
     return "\n".join(head) + "\n" + findings_table(findings) + "\n".join(tail) + "\n"
@@ -187,7 +187,7 @@ def render_judge(result: ScanResult, *, fmt: str = "table") -> str:
     summary = judge_summary(findings)
     if fmt == "json":
         payload = {
-            "tool": "unreach",
+            "tool": "deadpath",
             "version": __version__,
             "path": result.path,
             "auto_delete": False,
@@ -199,7 +199,7 @@ def render_judge(result: ScanResult, *, fmt: str = "table") -> str:
         }
         return json.dumps(payload, indent=2)
     lines = [
-        f"# Unreach judge — `{result.path}`",
+        f"# Deadpath judge — `{result.path}`",
         "",
         _summary_line(summary),
         "",
@@ -246,7 +246,7 @@ def render_plan_table(findings: list[Finding], *, path: str) -> str:
         [s["order"], s["action"], f"`{s['path']}`" + (f" :: `{s['symbol']}`" if s.get("symbol") else ""), s["severity"], f"{s['confidence']:.2f}", s["reason"]]
         for s in payload["steps"]
     ]
-    head = f"**Unreach plan** `{path}` — {len(rows)} step(s). Unreach never deletes files; this is an ordered suggestion list.\n\n"
+    head = f"**Deadpath plan** `{path}` — {len(rows)} step(s). Deadpath never deletes files; this is an ordered suggestion list.\n\n"
     return head + markdown_table(["#", "action", "target", "sev", "conf", "reason"], rows) + "\n"
 
 
@@ -265,7 +265,7 @@ def render_workflow_table(payload: dict[str, Any]) -> str:
         rows.append([step["id"], step["phase"], step["action"], "; ".join(how), step.get("judge") or step.get("triage") or "—", step.get("finding_id") or "—"])
     profile = payload.get("profile", {})
     head = (
-        f"**Unreach workflow** — primary `{profile.get('primary', 'none')}`"
+        f"**Deadpath workflow** — primary `{profile.get('primary', 'none')}`"
         + (f" · {', '.join(profile.get('frameworks', []))}" if profile.get("frameworks") else "")
         + f" · {len(payload.get('selected_findings', []))} selected"
         + (f" · {len(payload.get('kept_by_judge', []))} kept by judge" if payload.get("kept_by_judge") else "")
@@ -290,7 +290,7 @@ def render_triage_table(payload: dict[str, Any], findings: list[Finding]) -> str
         ])
     llm = payload.get("llm", {})
     head = (
-        f"**Unreach triage** — {'model ' + str(llm.get('model') or 'enabled') if llm.get('enabled') else 'heuristic (no API key)'}"
+        f"**Deadpath triage** — {'model ' + str(llm.get('model') or 'enabled') if llm.get('enabled') else 'heuristic (no API key)'}"
         f" · asked {llm.get('asked', 0)} · cached {llm.get('cached', 0)} · heuristic {llm.get('heuristic', 0)}"
         f" · skipped {llm.get('skipped_block', 0)} block + {llm.get('skipped_note', 0)} note\n\n"
     )
@@ -305,7 +305,7 @@ def render_result_md(result: ScanResult, *, only_new: bool = False) -> str:
     delta = result.delta
     profile = result.profile
     lines = [
-        "# Unreach scan",
+        "# Deadpath scan",
         "",
         f"Path: `{result.path}`",
         f"Languages: {', '.join(f'{k}={v}' for k, v in profile.languages.items()) or 'none'}"
@@ -316,7 +316,7 @@ def render_result_md(result: ScanResult, *, only_new: bool = False) -> str:
         f"{len(delta.resolved)} resolved · {len(delta.suppressed)} suppressed by decisions",
         "",
         "Severity comes from a deterministic confidence score (block ≥ 0.85, warn ≥ 0.55).",
-        "Unreach never deletes files.",
+        "Deadpath never deletes files.",
         "",
     ]
     if only_new:
@@ -357,13 +357,13 @@ def render_scan_md(findings: list[Finding], *, path: str) -> str:
     warns = sum(1 for f in findings if f.severity == "warn")
     notes = sum(1 for f in findings if f.severity == "note")
     lines = [
-        "# Unreach scan",
+        "# Deadpath scan",
         "",
         f"Path: `{path}`",
         f"Findings: **{len(findings)}** ({blocks} block, {warns} warn, {notes} note)",
         "",
         "High-confidence findings are `block`. Guessed findings are `warn` or `note`.",
-        "Unreach never deletes files.",
+        "Deadpath never deletes files.",
         "",
     ]
     if not findings:
@@ -397,11 +397,11 @@ def render_plan(findings: list[Finding], *, path: str, fmt: str = "md") -> str:
 
 def render_plan_md(steps: list[PlanStep], *, path: str) -> str:
     lines = [
-        "# Unreach plan",
+        "# Deadpath plan",
         "",
         f"Path: `{path}`",
         "",
-        "Unreach **never deletes files**. This is an ordered suggestion list, not a patch.",
+        "Deadpath **never deletes files**. This is an ordered suggestion list, not a patch.",
         "",
     ]
     if not steps:
@@ -427,7 +427,7 @@ def render_workflow(payload: dict[str, Any], *, fmt: str = "md") -> str:
         return render_workflow_table(payload)
     profile = payload.get("profile", {})
     lines = [
-        "# Unreach workflow",
+        "# Deadpath workflow",
         "",
         f"Primary language: `{profile.get('primary', 'none')}`"
         + (f" · frameworks: {', '.join(profile.get('frameworks', []))}" if profile.get("frameworks") else "")
@@ -486,14 +486,14 @@ def render_triage(payload: dict[str, Any], findings: list[Finding], *, fmt: str 
     verdicts = payload.get("verdicts", {})
     by_id = {f.id: f for f in findings}
     lines = [
-        "# Unreach triage",
+        "# Deadpath triage",
         "",
         f"Model: {'enabled (' + str(llm.get('model') or 'OpenAI-compatible') + ')' if llm.get('enabled') else 'not configured — deterministic heuristic verdicts'}",
         f"Asked {llm.get('asked', 0)} · cached {llm.get('cached', 0)} · heuristic {llm.get('heuristic', 0)} · "
         f"skipped {llm.get('skipped_block', 0)} block (certain) + {llm.get('skipped_note', 0)} note (too weak)"
         + (f" · deferred {llm['deferred']} to next run" if llm.get("deferred") else ""),
         "",
-        "Verdicts are cached in .unreach/memory.json by evidence digest; unchanged findings are never re-asked.",
+        "Verdicts are cached in .deadpath/memory.json by evidence digest; unchanged findings are never re-asked.",
         "",
     ]
     if not verdicts:
@@ -513,7 +513,7 @@ def render_languages(payload: dict[str, Any], *, fmt: str = "md") -> str:
         return json.dumps(payload, indent=2)
     counts = payload["counts"]
     lines = [
-        "# Unreach support matrix",
+        "# Deadpath support matrix",
         "",
         f"{counts['languages']} languages · {counts['frameworks']} frameworks",
         "",
@@ -539,8 +539,8 @@ def render_sarif(findings: list[Finding]) -> str:
             {
                 "id": finding.kind,
                 "name": finding.kind.replace("_", " ").title().replace(" ", ""),
-                "shortDescription": {"text": f"Unreach {finding.kind.replace('_', ' ')}"},
-                "helpUri": "https://wolfxops.github.io/unreach/cli.html",
+                "shortDescription": {"text": f"Deadpath {finding.kind.replace('_', ' ')}"},
+                "helpUri": "https://wolfxops.github.io/deadpath/cli.html",
                 "properties": {"tags": ["dead-code", "maintainability"]},
             },
         )
@@ -556,7 +556,7 @@ def render_sarif(findings: list[Finding]) -> str:
                         }
                     }
                 ],
-                "partialFingerprints": {"unreachId": finding.id},
+                "partialFingerprints": {"deadpathId": finding.id},
                 "properties": {
                     "confidence": finding.confidence,
                     "symbol": finding.symbol,
@@ -581,9 +581,9 @@ def render_sarif(findings: list[Finding]) -> str:
             {
                 "tool": {
                     "driver": {
-                        "name": "unreach",
+                        "name": "deadpath",
                         "version": __version__,
-                        "informationUri": "https://github.com/wolfxops/unreach",
+                        "informationUri": "https://github.com/wolfxops/deadpath",
                         "rules": list(rules.values()),
                     }
                 },

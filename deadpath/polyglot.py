@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from unreach.graph import FactsCache, sha256_text
+from deadpath.graph import FactsCache, sha256_text
 
 TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
 MAX_TOKENS = 4000

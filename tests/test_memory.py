@@ -3,11 +3,23 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from unreach.cli import main
-from unreach.memory import Memory
-from unreach.scan import scan_repo
+from deadpath.cli import main
+from deadpath.memory import Memory, memory_dir_for
+from deadpath.scan import scan_repo
 
 DEADAPP = Path(__file__).resolve().parents[1] / "fixtures" / "deadapp"
+
+
+def test_legacy_memory_dir_is_renamed(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("DEADPATH_MEMORY_DIR", raising=False)
+    legacy = tmp_path / ".unreach"
+    legacy.mkdir()
+    (legacy / "memory.json").write_text('{"v": 1}')
+    resolved = memory_dir_for(tmp_path)
+    assert resolved == tmp_path / ".deadpath"
+    assert resolved.is_dir()
+    assert not legacy.exists()
+    assert (resolved / "memory.json").read_text() == '{"v": 1}'
 
 
 def test_second_scan_uses_cache_and_reports_persisting(isolated_memory: Path) -> None:
@@ -47,7 +59,7 @@ def test_remember_suppresses_finding(isolated_memory: Path) -> None:
 
 
 def test_resolved_when_finding_disappears(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("UNREACH_MEMORY_DIR", str(tmp_path / "mem"))
+    monkeypatch.setenv("DEADPATH_MEMORY_DIR", str(tmp_path / "mem"))
     repo = tmp_path / "repo"
     (repo / "p").mkdir(parents=True)
     (repo / "p" / "__init__.py").write_text("")

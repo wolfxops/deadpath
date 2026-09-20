@@ -1,4 +1,4 @@
-"""Unreach CLI: scan, judge, plan, workflow, triage, explain, remember, memory, languages, mcp."""
+"""Deadpath CLI: scan, judge, plan, workflow, triage, explain, remember, memory, languages, mcp."""
 
 from __future__ import annotations
 
@@ -7,35 +7,35 @@ import json
 import sys
 from pathlib import Path
 
-from unreach import __version__
-from unreach.confidence import DEFAULT_MIN_CONFIDENCE
-from unreach.explain import explain as explain_finding
-from unreach.memory import DECISIONS, Memory
-from unreach.mock import default_mock_root
-from unreach.render import render_judge, render_languages, render_plan, render_result, render_triage, render_workflow
-from unreach.scan import find_by_id, scan_repo, supported_languages
-from unreach.support import languages_payload
-from unreach.triage import triage
-from unreach.workflow import build_workflow
+from deadpath import __version__
+from deadpath.confidence import DEFAULT_MIN_CONFIDENCE
+from deadpath.explain import explain as explain_finding
+from deadpath.memory import DECISIONS, Memory
+from deadpath.mock import default_mock_root
+from deadpath.render import render_judge, render_languages, render_plan, render_result, render_triage, render_workflow
+from deadpath.scan import find_by_id, scan_repo, supported_languages
+from deadpath.support import languages_payload
+from deadpath.triage import triage
+from deadpath.workflow import build_workflow
 
 
 def main(argv: list[str] | None = None) -> int:
     try:
         return _main(list(sys.argv[1:] if argv is None else argv))
     except KeyboardInterrupt:
-        print("unreach: interrupted", file=sys.stderr)
+        print("deadpath: interrupted", file=sys.stderr)
         return 2
     except Exception as exc:  # noqa: BLE001
-        print(f"unreach: {exc}", file=sys.stderr)
+        print(f"deadpath: {exc}", file=sys.stderr)
         return 2
 
 
 def _main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
-        prog="unreach",
+        prog="deadpath",
         description="Find the code your agents keep rewriting around.",
     )
-    parser.add_argument("--version", action="version", version=f"unreach {__version__}")
+    parser.add_argument("--version", action="version", version=f"deadpath {__version__}")
     sub = parser.add_subparsers(dest="cmd")
 
     scan_p = sub.add_parser("scan", help="Deterministic dead-code scan with confidence scores")
@@ -71,7 +71,7 @@ def _main(argv: list[str]) -> int:
     explain_p.add_argument("finding_id")
     _add_common(explain_p)
 
-    rem_p = sub.add_parser("remember", help="Store a decision for a finding in .unreach/memory.json")
+    rem_p = sub.add_parser("remember", help="Store a decision for a finding in .deadpath/memory.json")
     rem_p.add_argument("finding_id")
     rem_p.add_argument("--decision", choices=DECISIONS, required=True)
     rem_p.add_argument("--note", default="")
@@ -89,7 +89,7 @@ def _main(argv: list[str]) -> int:
         parser.print_help()
         return 2
     if args.cmd == "mcp":
-        from unreach.mcp_server import serve
+        from deadpath.mcp_server import serve
 
         return serve()
     if args.cmd == "languages":
@@ -157,7 +157,7 @@ def _main(argv: list[str]) -> int:
     if args.cmd == "explain":
         finding = find_by_id(result.findings + result.suppressed, args.finding_id)
         if finding is None:
-            print(f"unreach: unknown finding id: {args.finding_id}", file=sys.stderr)
+            print(f"deadpath: unknown finding id: {args.finding_id}", file=sys.stderr)
             return 2
         sys.stdout.write(explain_finding(finding) + "\n")
         return 0
@@ -175,7 +175,7 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mock", action="store_true", help="Fixture/mock mode; no API keys")
     parser.add_argument("--lang", choices=supported_languages(), default="auto", metavar="LANG",
                         help="auto (default) or one of: " + ", ".join(supported_languages()[1:]))
-    parser.add_argument("--no-memory", action="store_true", help="Do not read or write .unreach/memory.json")
+    parser.add_argument("--no-memory", action="store_true", help="Do not read or write .deadpath/memory.json")
     parser.add_argument("--no-judge", action="store_true", help="Skip the judge/critic layer (raw scan confidence)")
     parser.add_argument(
         "--min-confidence",

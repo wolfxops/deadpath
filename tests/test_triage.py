@@ -3,12 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from unreach import triage as tri
-from unreach.cli import main
-from unreach.mcp_server import Session, handle_request
-from unreach.memory import Memory
-from unreach.scan import Finding, scan_repo
-from unreach.workflow import build_workflow
+from deadpath import triage as tri
+from deadpath.cli import main
+from deadpath.mcp_server import Session, handle_request
+from deadpath.memory import Memory
+from deadpath.scan import Finding, scan_repo
+from deadpath.workflow import build_workflow
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
@@ -142,7 +142,7 @@ def test_cli_and_mcp_triage(isolated_memory, capsys, monkeypatch):
             "jsonrpc": "2.0",
             "id": 1,
             "method": "tools/call",
-            "params": {"name": "unreach.triage", "arguments": {"mock": True, "path": str(FIXTURES / "deadapp"), "llm": False}},
+            "params": {"name": "deadpath.triage", "arguments": {"mock": True, "path": str(FIXTURES / "deadapp"), "llm": False}},
         },
         session,
     )
@@ -153,7 +153,7 @@ def test_cli_and_mcp_triage(isolated_memory, capsys, monkeypatch):
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/call",
-            "params": {"name": "unreach.workflow", "arguments": {"mock": True, "path": str(FIXTURES / "deadapp")}},
+            "params": {"name": "deadpath.workflow", "arguments": {"mock": True, "path": str(FIXTURES / "deadapp")}},
         },
         session,
     )

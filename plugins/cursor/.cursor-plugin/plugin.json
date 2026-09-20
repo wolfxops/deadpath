@@ -1,14 +1,14 @@
 {
-  "name": "unreach",
+  "name": "deadpath",
   "version": "0.1.0",
-  "description": "Dead-code scan for Cursor. Do not guess unused code; call the Unreach MCP.",
+  "description": "Dead-code scan for Cursor. Do not guess unused code; call the Deadpath MCP.",
   "author": {
     "name": "Vivek Singh",
     "url": "https://x.com/wolfxops"
   },
   "mcpServers": {
-    "unreach": {
-      "command": "unreach",
+    "deadpath": {
+      "command": "deadpath",
       "args": ["mcp"]
     }
   }

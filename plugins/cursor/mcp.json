@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "unreach": {
-      "command": "unreach",
+    "deadpath": {
+      "command": "deadpath",
       "args": ["mcp"]
     }
   }

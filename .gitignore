@@ -2,6 +2,7 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+.deadpath/
 .unreach/
 .pytest_cache/
 dist/

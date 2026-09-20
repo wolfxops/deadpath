@@ -20,7 +20,7 @@ Counter-hypotheses cover the ways code stays live without an import edge:
 * dormant-not-dead code (feature flags, platform guards, conditional
   compilation, migrations, generated code, deprecation windows),
 * convention-dispatched names (``clean_<field>``, ``getServerSideProps``, ...),
-* explicit ``unreach: keep`` markers and work-in-progress hints from git.
+* explicit ``deadpath: keep`` markers and work-in-progress hints from git.
 
 Two further checks ride along:
 
@@ -44,12 +44,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
-from unreach import confidence as conf
-from unreach.langs import TOKEN_RE, Profile
-from unreach.redact import SECRET_PATTERNS, redact_text
+from deadpath import confidence as conf
+from deadpath.langs import TOKEN_RE, Profile
+from deadpath.redact import SECRET_PATTERNS, redact_text
 
 if TYPE_CHECKING:  # pragma: no cover
-    from unreach.scan import Finding
+    from deadpath.scan import Finding
 
 VERDICTS = ("remove", "verify", "keep")
 MAX_PENALTY = 0.85
@@ -66,7 +66,7 @@ GIT_RECENT_DAYS = 14
 
 WORD_RE = re.compile(r"[A-Za-z_]\w{2,}")
 SKIP_PARTS = {
-    ".git", ".hg", ".svn", ".venv", "venv", "env", "__pycache__", "node_modules", ".unreach",
+    ".git", ".hg", ".svn", ".venv", "venv", "env", "__pycache__", "node_modules", ".deadpath",
     ".pytest_cache", "dist", "build", ".tox", ".mypy_cache", ".ruff_cache", "site-packages", ".eggs",
     ".next", "coverage", "target", "vendor", "Pods", ".gradle", "obj", "_build", "deps", ".dart_tool",
     "DerivedData",
@@ -358,7 +358,7 @@ def build_context(
     artifacts: ArtifactIndex | None = None,
     parse_failures: int = 0,
 ) -> Context:
-    from unreach.langs import file_role
+    from deadpath.langs import file_role
 
     root = Path(root).resolve()
     artifacts = artifacts or ArtifactIndex(root)
@@ -548,7 +548,10 @@ MIGRATION_PATH_RE = re.compile(r"(?i)(?:^|/)(?:migrations?|migrate|alembic|versi
 SUBSCRIBER_IN_FILE_RE = re.compile(
     r"\.connect\(\s*\w|@receiver\b|\.subscribe\(|@subscribe\b|@Subscribe\b|emitter\.on\(|bus\.on\(|\.addEventListener\(|EventEmitter|@KafkaListener|@RabbitListener|@EventListener|@SqsListener|@JmsListener|@StreamListener|@ServiceActivator|@MessageMapping|@Consumer\b|KafkaConsumer|consumer\.subscribe|pubsub\.subscribe|\.listen\(\s*['\"]|@socketio\.on|@sio\.(?:on|event)|@bot\.(?:event|command|listen)|@client\.event|@commands\.command|@dp\.message|@app\.on_event|@event\.listens_for|post_save\.connect|pre_save\.connect|signal\.signal\(|Signal\(\)|NotificationCenter|@IBAction|@objc\s+func|addObserver|EventBus|@Listener\b|@OnEvent\b|@EventPattern\b|@MessagePattern\b|handle_info\(|handle_cast\(|handle_call\(|Phoenix\.PubSub|@app\.post_load|@app\.before_first_request|on_message|on_ready|on_startup|on_shutdown"
 )
-KEEP_MARKER_RE = re.compile(r"unreach:\s*(?:keep|ignore)|unreach-(?:keep|ignore)|noqa:\s*unreach|@unreach-keep")
+KEEP_MARKER_RE = re.compile(
+    r"deadpath:\s*(?:keep|ignore)|deadpath-(?:keep|ignore)|noqa:\s*deadpath|@deadpath-keep"
+    r"|unreach:\s*(?:keep|ignore)|unreach-(?:keep|ignore)|noqa:\s*unreach|@unreach-keep"
+)
 DEPRECATION_RE = re.compile(r"(?i)@deprecated\b|\bdeprecated\b|#\[deprecated|\[Obsolete|@Deprecated|warnings\.warn\([^)]*Deprecat|DeprecationWarning|\bsunset\b|remove(?:d)? in v?\d|removal[_ ]date|end[_ -]of[_ -]life|EOL\b")
 WIP_RE = re.compile(r"(?i)\bWIP\b|work in progress|not (?:yet )?(?:used|wired|hooked up|connected|implemented|enabled)|coming soon|phase\s*[2-9]|TODO:?\s*(?:wire|hook|connect|enable|use|integrate|call)|FIXME:?\s*(?:wire|hook|connect|enable)|placeholder|stub(?:bed)?\b|experimental|behind (?:a )?flag|next (?:release|sprint|milestone)|under (?:construction|development)")
 SHEBANG_RE = re.compile(r"\A#!")
@@ -854,8 +857,8 @@ def _chk_test_only(f: "Finding", ctx: Context, n: Needles) -> list[Evidence]:
 
 HYPOTHESES: list[Hypothesis] = [
     Hypothesis("explicit_keep_marker", "strong", 0.70, ALL_KINDS,
-               "An `unreach: keep` / `unreach-ignore` marker sits on or next to the target.",
-               "Honor the marker: record `keep` with unreach.remember and move on.", _chk_keep_marker),
+               "An `deadpath: keep` / `deadpath-ignore` marker sits on or next to the target.",
+               "Honor the marker: record `keep` with deadpath.remember and move on.", _chk_keep_marker),
     Hypothesis("scheduled_job", "strong", 0.50, CODE_KINDS,
                "Named in a scheduler artifact (crontab, celery beat, k8s CronJob, workflow `schedule:`, systemd timer).",
                "Open {where}. If the schedule is active in production this is a live job: remember `keep`. If the schedule is disabled, remove the schedule entry and the code in the same patch.", _chk_scheduled_job),

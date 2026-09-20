@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from unreach.cli import main
+from deadpath.cli import main
 
 DEADAPP = Path(__file__).resolve().parents[1] / "fixtures" / "deadapp"
 
@@ -33,7 +33,7 @@ def test_plan_cli_mentions_no_delete(capsys) -> None:
 
 def test_explain_heuristic_without_key(capsys, monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("UNREACH_API_KEY", raising=False)
+    monkeypatch.delenv("DEADPATH_API_KEY", raising=False)
     code = main(
         [
             "explain",
@@ -53,7 +53,7 @@ def test_unknown_command_help() -> None:
 
 
 def test_missing_path_errors() -> None:
-    code = main(["scan", "/no/such/unreach-path", "--mock"])
+    code = main(["scan", "/no/such/deadpath-path", "--mock"])
     assert code == 2
 
 

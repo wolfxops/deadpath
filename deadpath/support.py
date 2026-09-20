@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from unreach.langs import FRAMEWORKS, LANGUAGE_NAMES
-from unreach.polyglot import LANGS
+from deadpath.langs import FRAMEWORKS, LANGUAGE_NAMES
+from deadpath.polyglot import LANGS
 
 TIERS = {
     "py": {"tier": "ast", "precision": "path", "detects": ["orphan_file", "unused_export", "unused_dep", "unreachable"], "suffixes": [".py"]},
@@ -32,7 +32,7 @@ def languages_payload() -> dict[str, Any]:
             }
         )
     return {
-        "tool": "unreach",
+        "tool": "deadpath",
         "languages": languages,
         "frameworks": sorted(FRAMEWORKS),
         "counts": {"languages": len(languages), "frameworks": len(FRAMEWORKS)},

@@ -1,4 +1,4 @@
-"""Long-term memory: ``.unreach/memory.json`` next to the scanned root.
+"""Long-term memory: ``.deadpath/memory.json`` next to the scanned root.
 
 What it stores (never file contents, never secrets):
 
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 MEMORY_VERSION = 1
-MEMORY_DIR_NAME = ".unreach"
+MEMORY_DIR_NAME = ".deadpath"
 MEMORY_FILE = "memory.json"
 DECISIONS = ("keep", "false_positive", "resolved")
 MAX_RUNS = 50
@@ -56,10 +56,17 @@ class Delta:
 
 
 def memory_dir_for(root: Path) -> Path:
-    override = os.environ.get("UNREACH_MEMORY_DIR")
+    override = os.environ.get("DEADPATH_MEMORY_DIR")
     if override:
         return Path(override)
-    return Path(root) / MEMORY_DIR_NAME
+    target = Path(root) / MEMORY_DIR_NAME
+    legacy = Path(root) / ".unreach"
+    if not target.exists() and legacy.is_dir():
+        try:
+            legacy.rename(target)
+        except OSError:
+            return legacy
+    return target
 
 
 class Memory:

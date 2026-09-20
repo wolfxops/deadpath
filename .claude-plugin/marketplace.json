@@ -1,5 +1,5 @@
 {
-  "name": "unreach",
+  "name": "deadpath",
   "owner": {
     "name": "Vivek Singh",
     "url": "https://x.com/wolfxops"
@@ -9,9 +9,9 @@
   },
   "plugins": [
     {
-      "name": "unreach",
+      "name": "deadpath",
       "source": "./plugins/claude",
-      "description": "Find dead and unused code via the Unreach MCP."
+      "description": "Find dead and unused code via the Deadpath MCP."
     }
   ]
 }

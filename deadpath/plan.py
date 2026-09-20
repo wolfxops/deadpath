@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-from unreach.scan import Finding
+from deadpath.scan import Finding
 
 KIND_ORDER = {
     "unused_export": 0,
@@ -78,11 +78,11 @@ def build_plan(findings: list[Finding]) -> list[PlanStep]:
 def plan_payload(findings: list[Finding], *, path: str) -> dict:
     steps = build_plan(findings)
     return {
-        "tool": "unreach",
+        "tool": "deadpath",
         "auto_delete": False,
         "path": path,
         "summary": (
-            "Ordered suggestions only. Unreach does not delete files or apply patches."
+            "Ordered suggestions only. Deadpath does not delete files or apply patches."
         ),
         "steps": [step.to_dict() for step in steps],
     }

@@ -1,4 +1,4 @@
-"""Unreach — find the code your agents keep rewriting around."""
+"""Deadpath — find the code your agents keep rewriting around."""
 
 from __future__ import annotations
 
