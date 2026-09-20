@@ -7,17 +7,7 @@ from typing import Any
 
 from deadpath import __version__
 from deadpath.plan import PlanStep, plan_payload
-from deadpath.scan import Finding, ScanResult, findings_to_json
-
-
-def render_scan(findings: list[Finding], *, path: str, fmt: str) -> str:
-    if fmt == "json":
-        return findings_to_json(findings, path=path)
-    if fmt == "sarif":
-        return render_sarif(findings)
-    if fmt == "table":
-        return findings_table(findings)
-    return render_scan_md(findings, path=path)
+from deadpath.scan import Finding, ScanResult
 
 
 def render_result(result: ScanResult, *, fmt: str, only_new: bool = False, compact: bool = False) -> str:
@@ -348,40 +338,6 @@ def render_result_md(result: ScanResult, *, only_new: bool = False) -> str:
         for finding in result.suppressed:
             decision = result.memory.get("decisions", {}).get(finding.id, {})
             lines.append(f"- `{finding.id}` — {decision.get('decision', '?')} {decision.get('note', '')}".rstrip())
-        lines.append("")
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def render_scan_md(findings: list[Finding], *, path: str) -> str:
-    blocks = sum(1 for f in findings if f.severity == "block")
-    warns = sum(1 for f in findings if f.severity == "warn")
-    notes = sum(1 for f in findings if f.severity == "note")
-    lines = [
-        "# Deadpath scan",
-        "",
-        f"Path: `{path}`",
-        f"Findings: **{len(findings)}** ({blocks} block, {warns} warn, {notes} note)",
-        "",
-        "High-confidence findings are `block`. Guessed findings are `warn` or `note`.",
-        "Deadpath never deletes files.",
-        "",
-    ]
-    if not findings:
-        lines.append("No dead-code findings.")
-        return "\n".join(lines) + "\n"
-    for finding in findings:
-        symbol = f" `{finding.symbol}`" if finding.symbol else ""
-        lines.extend(
-            [
-                f"## {finding.severity} {finding.confidence:.2f}  {finding.kind}{symbol}",
-                "",
-                f"- id: `{finding.id}`",
-                f"- path: `{finding.path}`",
-                f"- {finding.why}",
-            ]
-        )
-        for item in finding.evidence:
-            lines.append(f"- {item}")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

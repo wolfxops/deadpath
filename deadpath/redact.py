@@ -24,7 +24,3 @@ def redact_text(text: str) -> str:
     for pattern in SECRET_PATTERNS:
         out = pattern.sub("[REDACTED]", out)
     return out
-
-
-def has_secret(text: str) -> bool:
-    return any(pattern.search(text) for pattern in SECRET_PATTERNS)

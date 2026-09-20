@@ -93,3 +93,29 @@ def test_mcp_scan_tool() -> None:
     text = called["result"]["content"][0]["text"]
     assert "dead_symbol" in text
     assert "pkg/orphan.py" in text
+
+
+def test_pyproject_metadata_is_not_reported_as_dependencies(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("import requests\n")
+    (tmp_path / "pyproject.toml").write_text(
+        """[project]
+name = "sample"
+authors = [{ name = "Example Author", email = "author@example.com" }]
+keywords = ["static-analysis", "agents"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "requests>=2",
+  "unused-runtime>=1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.1"]
+"""
+    )
+
+    findings = scan_path(tmp_path, lang="py")
+    dependencies = {f.symbol for f in findings if f.kind == "unused_dep"}
+
+    assert dependencies == {"unused-runtime", "pytest", "ruff"}

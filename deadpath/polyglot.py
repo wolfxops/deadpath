@@ -100,10 +100,6 @@ def _read(path: Path) -> str:
         return ""
 
 
-def _regex_all(pattern: re.Pattern[str], text: str) -> list[str]:
-    return [m for m in pattern.findall(text) if m]
-
-
 # --------------------------------------------------------------------------- #
 # Go
 # --------------------------------------------------------------------------- #
