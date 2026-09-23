@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Deadpath — reachability graph, confidence score, devil's advocate</title>
+  <link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Deadpath
+      </div>
+      <div class="keyword">confidence score · devil's advocate</div>
+    </div>
+    <h1>The model never detects.<br>It only vetoes.</h1>
+    <p class="lead">Five stages. Four of them never call a model. Counsel can stop a deletion. It cannot upgrade a maybe into a delete.</p>
+    <div class="stages">
+      <article class="stage">
+        <div class="num">01</div>
+        <h2>Graph</h2>
+        <p>Python AST, TypeScript imports, and a reference graph for 14 more languages.</p>
+        <span class="tag">no LLM</span>
+      </article>
+      <article class="stage">
+        <div class="num">02</div>
+        <h2>Confidence</h2>
+        <p>Decorators, base classes, config names, and dynamic imports move a score you can diff.</p>
+        <span class="tag">no LLM</span>
+      </article>
+      <article class="stage">
+        <div class="num">03</div>
+        <h2>Judge</h2>
+        <p>Devil's advocate checks schedulers, flags, entry points, and reflection before anyone edits.</p>
+        <span class="tag">no LLM</span>
+      </article>
+      <article class="stage">
+        <div class="num">04</div>
+        <h2>Counsel</h2>
+        <p>Optional review of remove, then verify. Veto only: confirm, escalate, or overturn.</p>
+        <span class="tag veto">veto-only LLM</span>
+      </article>
+      <article class="stage">
+        <div class="num">05</div>
+        <h2>Memory</h2>
+        <p>Keep, false positive, or resolved. The next session does not re-litigate the same finding.</p>
+        <span class="tag">no LLM</span>
+      </article>
+    </div>
+  </div>
+</body>
+</html>

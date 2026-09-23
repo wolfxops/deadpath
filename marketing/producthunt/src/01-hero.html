@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Deadpath — dead-code detection for coding agents</title>
+  <link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Deadpath
+      </div>
+      <div class="keyword">dead-code detection · coding agents</div>
+    </div>
+    <div class="hero">
+      <div>
+        <h1>Find the code your agents keep rewriting around.</h1>
+        <p class="lead">Deterministic dead-code detection for Claude Code, Cursor, and Codex. The graph decides. The model only vetoes.</p>
+        <div class="pills">
+          <span class="pill"><b>16</b> languages</span>
+          <span class="pill"><b>45</b> frameworks</span>
+          <span class="pill">Never deletes files</span>
+        </div>
+      </div>
+      <div class="window">
+        <div class="chrome">
+          <span class="dot b"></span><span class="dot w"></span><span class="dot p"></span>
+          <span class="cmd">deadpath judge ./svc</span>
+        </div>
+        <table class="findings">
+          <thead><tr><th>sev</th><th>conf</th><th>kind</th><th>target</th><th>judge</th></tr></thead>
+          <tbody>
+            <tr><td class="sev block">block</td><td>0.92</td><td>orphan_file</td><td>pkg/orphan.py</td><td>remove</td></tr>
+            <tr><td class="sev block">block</td><td>0.88</td><td>unused_export</td><td>exports.py · dead_symbol</td><td>remove</td></tr>
+            <tr><td class="sev warn">warn</td><td>0.58</td><td>unused_export</td><td>hooks.py · maybe_dead</td><td>verify</td></tr>
+          </tbody>
+        </table>
+        <div class="foot"><span>2 block · 1 warn · exit 1</span><span><strong>auto_delete: false</strong></span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

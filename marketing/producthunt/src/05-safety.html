@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Deadpath — confidence score for CI, never auto-delete</title>
+  <link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Deadpath
+      </div>
+      <div class="keyword">never auto-delete · CI confidence</div>
+    </div>
+    <div class="safe">
+      <div>
+        <h1>Only high confidence fails the build.</h1>
+        <p class="lead">Severity comes from the score. Name-precision languages stay at warn. A scheduler, flag, or <span style="font-family:var(--mono);font-size:18px">deadpath: keep</span> marker sends the judge to keep.</p>
+        <div class="verdicts">
+          <div class="verdict"><b>remove</b><span>Quick win. Still a suggestion.</span></div>
+          <div class="verdict"><b>verify</b><span>One grep, then decide.</span></div>
+          <div class="verdict"><b>keep</b><span>Hidden live path. Skip.</span></div>
+        </div>
+        <div class="lock">0 files deleted. Ever. <span>auto_delete: false</span></div>
+      </div>
+      <div class="levels">
+        <div class="level">
+          <div class="name block">block</div>
+          <p>Exit 1. Goes in the plan unless the judge says keep.</p>
+          <div class="cut">≥ 0.85</div>
+        </div>
+        <div class="level">
+          <div class="name warn">warn</div>
+          <p>Probably unused. A signal hints at framework or dynamic use.</p>
+          <div class="cut">≥ 0.55</div>
+        </div>
+        <div class="level">
+          <div class="name note">note</div>
+          <p>A lead. Never fails CI. Never sent to a model.</p>
+          <div class="cut">&lt; 0.55</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

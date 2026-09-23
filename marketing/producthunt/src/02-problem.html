@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Deadpath — why unused-code tools get ignored</title>
+  <link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="#2447f9"/><circle cx="9" cy="14" r="2.4" fill="#fff"/><circle cx="19" cy="9" r="2.4" fill="#fff"/><circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/><path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Deadpath
+      </div>
+      <div class="keyword">unused code · false positives</div>
+    </div>
+    <h1>Dead code and live code<br>look the same to an agent.</h1>
+    <p class="lead">A route, a bean, a cron job, a feature flag. Naive scanners call them unused. Agents then delete them — or rewrite around them forever.</p>
+    <div class="cards">
+      <article class="card">
+        <div class="n">01</div>
+        <h2>False positives</h2>
+        <p>Django signals, FastAPI routes, Spring beans, Rails models, and Flutter widgets are loaded by the framework, not by an import.</p>
+      </article>
+      <article class="card">
+        <div class="n">02</div>
+        <h2>Token waste</h2>
+        <p>Every cleanup session re-crawls the tree and re-reads the same files. That rediscovery is the largest token sink in agent cleanup.</p>
+      </article>
+      <article class="card">
+        <div class="n">03</div>
+        <h2>One language each</h2>
+        <p>Knip for JavaScript. Vulture for Python. Nothing agreed for Go, Java, Rust, C#, Ruby, PHP, or Swift.</p>
+      </article>
+    </div>
+  </div>
+</body>
+</html>
