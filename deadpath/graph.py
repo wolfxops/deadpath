@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
+
+from deadpath.syntax import decorations_and_bases, unused_privates
 
 TS_IMPORT_RE = re.compile(
     r"""(?:import\s+(?:type\s+)?(?:[\s\S]*?\sfrom\s+)?|export\s+(?:type\s+)?[\s\S]*?\sfrom\s+|require\s*\(\s*)['"]([^'"]+)['"]""",
@@ -35,7 +38,7 @@ TS_IMPORT_STAR_RE = re.compile(
 TS_DYNAMIC_IMPORT_RE = re.compile(r"\bimport\s*\(")
 TS_STRING_RE = re.compile(r"""['"`]([A-Za-z_][\w./-]{2,})['"`]""")
 
-FACTS_VERSION = 3
+FACTS_VERSION = 4
 
 
 class FactsCache(Protocol):
@@ -80,6 +83,10 @@ class TsModule:
     dynamic_import: bool = False
     strings: set[str] = field(default_factory=set)
     digest: str = ""
+    decorated: dict[str, list[str]] = field(default_factory=dict)
+    bases: dict[str, list[str]] = field(default_factory=dict)
+    privates: dict[str, int] = field(default_factory=dict)
+    raw_imports: list[str] = field(default_factory=list)
 
 
 def sha256_text(text: str) -> str:
@@ -444,6 +451,7 @@ def extract_ts_facts(text: str) -> dict[str, Any]:
     exports = TS_EXPORT_FN_RE.findall(text)
     for group in TS_EXPORT_NAMED_RE.findall(text):
         exports.extend(_split_names(group))
+    decorated, bases = decorations_and_bases(text)
     return {
         "v": FACTS_VERSION,
         "exports": list(dict.fromkeys(exports)),
@@ -452,6 +460,9 @@ def extract_ts_facts(text: str) -> dict[str, Any]:
         "star": TS_IMPORT_STAR_RE.findall(text),
         "dynamic_import": bool(TS_DYNAMIC_IMPORT_RE.search(text)),
         "strings": sorted(set(TS_STRING_RE.findall(text)))[:400],
+        "decorated": decorated,
+        "bases": bases,
+        "privates": unused_privates("ts", text),
     }
 
 
@@ -460,6 +471,7 @@ def build_typescript_graph(
 ) -> dict[str, TsModule]:
     modules: dict[str, TsModule] = {}
     facts_by_key: dict[str, dict[str, Any]] = {}
+    aliases = _load_ts_aliases(root)
     for path in files:
         rel = path.resolve().relative_to(root.resolve()).as_posix()
         key = _ts_key(rel)
@@ -477,6 +489,10 @@ def build_typescript_graph(
             dynamic_import=bool(facts.get("dynamic_import", False)),
             strings=set(facts.get("strings", [])),
             digest=digest,
+            decorated={k: list(v) for k, v in facts.get("decorated", {}).items()},
+            bases={k: list(v) for k, v in facts.get("bases", {}).items()},
+            privates={k: int(v) for k, v in facts.get("privates", {}).items()},
+            raw_imports=[s for s in facts.get("imports", []) if not str(s).startswith(".")],
         )
         facts_by_key[key] = facts
 
@@ -484,15 +500,15 @@ def build_typescript_graph(
     for module in modules.values():
         facts = facts_by_key[module.key]
         for spec in facts.get("imports", []):
-            target = _resolve_ts_spec(module.rel_path, spec, known)
+            target = _resolve_ts_spec(module.rel_path, spec, known, aliases)
             if target:
                 module.imports.add(target)
         for names, spec in facts.get("named", []):
-            target = _resolve_ts_spec(module.rel_path, spec, known)
+            target = _resolve_ts_spec(module.rel_path, spec, known, aliases)
             if target and target in modules:
                 modules[target].imported_names.update(names)
         for spec in facts.get("star", []):
-            target = _resolve_ts_spec(module.rel_path, spec, known)
+            target = _resolve_ts_spec(module.rel_path, spec, known, aliases)
             if target and target in modules:
                 modules[target].namespace_imported = True
     return modules
@@ -518,14 +534,31 @@ def _ts_key(rel: str) -> str:
     return rel
 
 
-def _resolve_ts_spec(from_rel: str, spec: str, known: set[str]) -> str | None:
-    if not spec.startswith("."):
-        return None
-    base = Path(from_rel).parent / spec
-    candidates = [
-        Path(*base.parts).as_posix(),
-        (Path(*base.parts) / "index").as_posix(),
-    ]
+def _resolve_ts_spec(
+    from_rel: str,
+    spec: str,
+    known: set[str],
+    aliases: tuple[str, list[tuple[str, list[str]]]] | None = None,
+) -> str | None:
+    candidates: list[str] = []
+    if spec.startswith("."):
+        base = Path(from_rel).parent / spec
+        candidates = [
+            Path(*base.parts).as_posix(),
+            (Path(*base.parts) / "index").as_posix(),
+        ]
+    else:
+        base_url, mappings = aliases or (".", [])
+        mapped = list(_alias_targets(spec, base_url, mappings))
+        if mapped:
+            candidates.extend(mapped)
+        elif spec in known:
+            return spec
+        else:
+            # baseUrl absolute-from-root import, only if it lands on a known file.
+            prefix = "" if base_url in {".", ""} else base_url.rstrip("/") + "/"
+            candidates.append(f"{prefix}{spec}")
+            candidates.append(f"{prefix}{spec}/index")
     resolved: list[str] = []
     for candidate in candidates:
         parts: list[str] = []
@@ -543,6 +576,62 @@ def _resolve_ts_spec(from_rel: str, spec: str, known: set[str]) -> str | None:
         if candidate in known:
             return candidate
     return None
+
+
+def _load_ts_aliases(root: Path) -> tuple[str, list[tuple[str, list[str]]]]:
+    for name in ("tsconfig.json", "jsconfig.json"):
+        data = _load_jsonc(root / name)
+        if not data:
+            continue
+        options = data.get("compilerOptions") or {}
+        base = str(options.get("baseUrl") or ".")
+        paths = options.get("paths") or {}
+        mappings: list[tuple[str, list[str]]] = []
+        if isinstance(paths, dict):
+            for pattern, dests in paths.items():
+                if isinstance(dests, str):
+                    dests = [dests]
+                if isinstance(dests, list):
+                    mappings.append((str(pattern), [str(d) for d in dests]))
+        mappings.sort(key=lambda item: len(item[0].replace("*", "")), reverse=True)
+        return base, mappings
+    return ".", []
+
+
+def _alias_targets(spec: str, base_url: str, mappings: list[tuple[str, list[str]]]) -> list[str]:
+    prefix = "" if base_url in {".", ""} else base_url.rstrip("/") + "/"
+    out: list[str] = []
+    for pattern, dests in mappings:
+        matched: str | None = None
+        if "*" in pattern:
+            head, _, tail = pattern.partition("*")
+            if spec.startswith(head) and spec.endswith(tail):
+                end = -len(tail) if tail else None
+                matched = spec[len(head) : end]
+        elif spec == pattern:
+            matched = ""
+        if matched is None:
+            continue
+        for dest in dests:
+            replaced = dest.replace("*", matched) if "*" in dest else dest
+            replaced = replaced.lstrip("./")
+            out.append(prefix + replaced)
+            out.append(prefix + replaced + "/index")
+        break
+    return out
+
+
+def _load_jsonc(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    text = _read(path)
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    text = re.sub(r"//.*?$", "", text, flags=re.MULTILINE)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _split_names(group: str) -> list[str]:

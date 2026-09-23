@@ -9,7 +9,7 @@ from deadpath.polyglot import LANGS
 
 TIERS = {
     "py": {"tier": "ast", "precision": "path", "detects": ["orphan_file", "unused_export", "unused_dep", "unreachable"], "suffixes": [".py"]},
-    "ts": {"tier": "regex-graph", "precision": "path", "detects": ["orphan_file", "unused_export"], "suffixes": [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".vue", ".svelte"]},
+    "ts": {"tier": "regex-graph", "precision": "path", "detects": ["orphan_file", "unused_export", "unused_dep", "unreachable"], "suffixes": [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".vue", ".svelte"]},
 }
 
 
@@ -24,7 +24,7 @@ def languages_payload() -> dict[str, Any]:
                 "name": spec.name,
                 "tier": "reference-graph",
                 "precision": spec.precision,
-                "detects": ["orphan_file"] + (["unused_export"] if spec.exports else []),
+                "detects": ["orphan_file", "unused_export", "unused_dep", "unreachable"],
                 "suffixes": list(spec.suffixes),
                 "frameworks": _frameworks_for(key),
                 "validate": list(spec.validate),
@@ -38,10 +38,16 @@ def languages_payload() -> dict[str, Any]:
         "counts": {"languages": len(languages), "frameworks": len(FRAMEWORKS)},
         "precision_note": (
             "path: imports resolve to files, findings may reach block. "
-            "name: references are type/module tokens, findings capped at warn."
+            "name: references are type/module tokens, findings capped at warn. "
+            "unused_dep is guessed from manifests; unreachable is private names with a single token occurrence."
         ),
     }
 
 
 def _frameworks_for(lang_key: str) -> list[str]:
-    return sorted(name for name, spec in FRAMEWORKS.items() if spec["language"] == lang_key)
+    out: list[str] = []
+    for name, spec in FRAMEWORKS.items():
+        langs = {spec["language"], *spec.get("also", [])}
+        if lang_key in langs:
+            out.append(name)
+    return sorted(out)

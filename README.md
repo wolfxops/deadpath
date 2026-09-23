@@ -65,9 +65,9 @@ keeps surfacing the same complaints. Each maps to a mechanism:
 | Tier | Languages | Precision | Detects |
 |---|---|---|---|
 | AST | Python | path | orphan_file, unused_export, unused_dep, unreachable |
-| Import graph | TypeScript, JavaScript (+ `.vue`, `.svelte`) | path | orphan_file, unused_export |
-| Reference graph | Go, Rust, Ruby, Dart, C/C++ headers, Lua, Perl | path | orphan_file (+ unused_export where exports are declared) |
-| Reference graph | Java, Kotlin, Scala, C#, PHP, Swift, Elixir | name | orphan_file (+ unused_export where declared), capped at `warn` |
+| Import graph | TypeScript, JavaScript (+ `.vue`, `.svelte`) | path | orphan_file, unused_export, unused_dep, unreachable |
+| Reference graph | Go, Rust, Ruby, Dart, C/C++ headers, Lua, Perl | path | orphan_file, unused_export, unused_dep, unreachable |
+| Reference graph | Java, Kotlin, Scala, C#, PHP, Swift, Elixir | name | same four kinds, capped at `warn` |
 
 Frameworks (45): Django, Flask, FastAPI, pytest, Celery, SQLAlchemy, Click/Typer,
 Airflow, Pydantic · Next.js, React, Vue, Nuxt, Angular, Svelte/SvelteKit, Remix,

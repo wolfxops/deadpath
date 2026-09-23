@@ -40,12 +40,12 @@
       <article class="card">
         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M12 4v16"/></svg></div>
         <h3>Tier 2 · Import graph</h3>
-        <p>TypeScript and JavaScript, including <code>.vue</code> and <code>.svelte</code>. Import specifiers resolve to files via the same rules as bundlers; exports are matched by named import.</p>
+        <p>TypeScript and JavaScript, including <code>.vue</code> and <code>.svelte</code>. Import specifiers resolve via relative paths, <code>tsconfig</code> <code>paths</code> aliases, and <code>baseUrl</code>. Named exports, <code>@decorators</code>, and <code>package.json</code> dependencies are scored the same way as Python.</p>
       </article>
       <article class="card mem">
         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7.5l3 8M16 7.5l-3 8M8.5 6h7"/></svg></div>
         <h3>Tier 3 · Reference graph</h3>
-        <p>Fourteen languages. Each declares how a file is <em>identified</em> (import path, module name, declared types) and what it <em>references</em>. Precision is <code>path</code> or <code>name</code>.</p>
+        <p>Fourteen languages. Each declares how a file is <em>identified</em> (import path, module name, declared types) and what it <em>references</em>. Precision is <code>path</code> or <code>name</code>. All four finding kinds run: orphan files, unused exports, unused manifest dependencies, and private unreachable names.</p>
       </article>
     </div>
 
@@ -54,21 +54,21 @@
       <thead><tr><th>Language</th><th>Tier</th><th>Precision</th><th>Detects</th><th>Frameworks recognised</th><th>Validation commands in workflow</th></tr></thead>
       <tbody>
         <tr><td><strong>Python</strong></td><td>AST</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Django, Flask, FastAPI/Starlette, pytest, Celery, SQLAlchemy/Alembic, Click/Typer, Airflow, Pydantic</td><td><code>python -c "import …"</code> · mypy / pyright · pytest</td></tr>
-        <tr><td><strong>TypeScript / JavaScript</strong></td><td>import graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export</td><td>Next.js, React, Vue, Nuxt, Angular, Svelte/SvelteKit, Remix/React Router, Astro, Vite, Express/Koa/Fastify/Hono, NestJS, Electron, Jest/Vitest, Playwright/Cypress</td><td><code>npx tsc --noEmit</code> · vitest / jest / npm test</td></tr>
-        <tr><td><strong>Go</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export</td><td>Gin, Echo, Fiber, Gorilla, Chi, Cobra, urfave/cli</td><td><code>go build ./...</code> · <code>go vet ./...</code> · <code>go test ./...</code></td></tr>
-        <tr><td><strong>Rust</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export</td><td>Actix, Axum, Rocket, Warp, Tokio, Clap</td><td><code>cargo check --all-targets</code> · <code>cargo test</code></td></tr>
-        <tr><td><strong>Java</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file</td><td>Spring, Quarkus, Micronaut, JUnit/TestNG</td><td>mvn compile/test · <code>./gradlew test</code></td></tr>
-        <tr><td><strong>Kotlin</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file</td><td>Ktor, Android</td><td><code>./gradlew build</code> · <code>./gradlew test</code></td></tr>
-        <tr><td><strong>Scala</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file</td><td>sbt projects</td><td><code>sbt compile</code> · <code>sbt test</code></td></tr>
-        <tr><td><strong>C#</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file</td><td>ASP.NET Core, xUnit/NUnit/MSTest</td><td><code>dotnet build</code> · <code>dotnet test</code></td></tr>
-        <tr><td><strong>Ruby</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export</td><td>Rails, Sinatra, RSpec/Minitest</td><td>rubocop · rspec / rake test</td></tr>
-        <tr><td><strong>PHP</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export</td><td>Laravel, Symfony</td><td><code>composer validate</code> · phpunit</td></tr>
-        <tr><td><strong>Swift</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export</td><td>SwiftUI/UIKit, Vapor</td><td><code>swift build</code> · <code>swift test</code></td></tr>
-        <tr><td><strong>Dart</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file</td><td>Flutter</td><td><code>dart analyze</code> · flutter test / dart test</td></tr>
-        <tr><td><strong>Elixir</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export</td><td>Phoenix</td><td><code>mix compile --warnings-as-errors</code> · <code>mix test</code></td></tr>
-        <tr><td><strong>C / C++</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file (headers)</td><td>CMake / Make / Meson projects</td><td><code>cmake --build build</code> · ctest</td></tr>
-        <tr><td><strong>Lua</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export</td><td>rockspec, Neovim plugin layouts</td><td>luacheck · busted</td></tr>
-        <tr><td><strong>Perl</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export</td><td>cpanfile / Makefile.PL</td><td><code>perl -c</code> · <code>prove -l t</code></td></tr>
+        <tr><td><strong>TypeScript / JavaScript</strong></td><td>import graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Next.js, React, Vue, Nuxt, Angular, Svelte/SvelteKit, Remix/React Router, Astro, Vite, Express/Koa/Fastify/Hono, NestJS, Electron, Jest/Vitest, Playwright/Cypress</td><td><code>npx tsc --noEmit</code> · vitest / jest / npm test</td></tr>
+        <tr><td><strong>Go</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Gin, Echo, Fiber, Gorilla, Chi, Cobra, urfave/cli</td><td><code>go build ./...</code> · <code>go vet ./...</code> · <code>go test ./...</code></td></tr>
+        <tr><td><strong>Rust</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Actix, Axum, Rocket, Warp, Tokio, Clap</td><td><code>cargo check --all-targets</code> · <code>cargo test</code></td></tr>
+        <tr><td><strong>Java</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Spring, Quarkus, Micronaut, JUnit/TestNG</td><td>mvn compile/test · <code>./gradlew test</code></td></tr>
+        <tr><td><strong>Kotlin</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Ktor, Android, Spring, Quarkus, Micronaut, JUnit</td><td><code>./gradlew build</code> · <code>./gradlew test</code></td></tr>
+        <tr><td><strong>Scala</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Spring, Quarkus, Micronaut, JUnit (sbt projects)</td><td><code>sbt compile</code> · <code>sbt test</code></td></tr>
+        <tr><td><strong>C#</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>ASP.NET Core, xUnit/NUnit/MSTest</td><td><code>dotnet build</code> · <code>dotnet test</code></td></tr>
+        <tr><td><strong>Ruby</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Rails, Sinatra, RSpec/Minitest</td><td>rubocop · rspec / rake test</td></tr>
+        <tr><td><strong>PHP</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Laravel, Symfony</td><td><code>composer validate</code> · phpunit</td></tr>
+        <tr><td><strong>Swift</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>SwiftUI/UIKit, Vapor</td><td><code>swift build</code> · <code>swift test</code></td></tr>
+        <tr><td><strong>Dart</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Flutter</td><td><code>dart analyze</code> · flutter test / dart test</td></tr>
+        <tr><td><strong>Elixir</strong></td><td>reference graph</td><td><span class="tag warn">name</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>Phoenix</td><td><code>mix compile --warnings-as-errors</code> · <code>mix test</code></td></tr>
+        <tr><td><strong>C / C++</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>CMake / Make / Meson / vcpkg projects</td><td><code>cmake --build build</code> · ctest</td></tr>
+        <tr><td><strong>Lua</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>rockspec, Neovim plugin layouts</td><td>luacheck · busted</td></tr>
+        <tr><td><strong>Perl</strong></td><td>reference graph</td><td><span class="tag ok">path</span></td><td>orphan_file · unused_export · unused_dep · unreachable</td><td>cpanfile / Makefile.PL</td><td><code>perl -c</code> · <code>prove -l t</code></td></tr>
       </tbody>
     </table></div>
 

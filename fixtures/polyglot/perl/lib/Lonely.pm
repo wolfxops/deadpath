@@ -1,0 +1,2 @@
+package Lonely;
+1;
