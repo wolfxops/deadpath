@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Deadpath thumbnail 240×240</title>
+  <style>
+    html, body { margin: 0; width: 240px; height: 240px; overflow: hidden; }
+    body {
+      display: grid;
+      place-items: center;
+      background: #2447f9;
+    }
+    .tile {
+      width: 176px;
+      height: 176px;
+      border-radius: 40px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .18);
+    }
+    .mark { width: 118px; height: 118px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="tile">
+    <svg class="mark" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="12" fill="#2447f9"/>
+      <circle cx="9" cy="14" r="2.4" fill="#fff"/>
+      <circle cx="19" cy="9" r="2.4" fill="#fff"/>
+      <circle cx="19" cy="19" r="2.4" fill="#ffb4c0"/>
+      <path d="M11 13.2l5.6-3.4M11 14.8l5.6 3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  </div>
+</body>
+</html>
